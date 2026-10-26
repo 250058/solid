@@ -1,0 +1,228 @@
+/* Python 실행창(pyrunner.js).
+   기본("자동")은 교재 테마(style.css)를 따라 GitHub Light / VS Code "2026 Dark"(uml-tool과 같음)로 바뀌고,
+   머리줄의 테마 목록에서 Solarized·One Dark·Monokai·Dracula·Nord·고대비를 고를 수 있다. */
+:root{--pr-w:min(46vw,640px)}
+
+/* ---------- 색 토큰 ----------
+   테마 선택이 "자동"이면 교재 테마를 따라 GitHub Light / VS Code Dark 중 하나를 쓰고,
+   다른 테마를 고르면 pyrunner.js가 #pyrunner와 자동완성 목록에 data-pr-theme을 붙인다.
+   (이 블록은 색 표를 바꾸기 쉽게 한 줄에 한 테마씩 적었다) */
+#pyrunner, .pr-ac{
+    --pr-bg:#ffffff; --pr-bar:#f6f8fa; --pr-raised:#ffffff; --pr-help-bg:#f6f8fa; --pr-border:#d0d7de; --pr-row:#eaeef2; --pr-fg:#1f2328; --pr-strong:#1f2328; --pr-dim:#6e7781; --pr-gutter:#8c959f; --pr-curline:#f0f3f6; --pr-guide:#e1e4e8; --pr-accent:#0969da; --pr-primary:#0969da; --pr-primary-hover:#0550ae; --pr-caret:#1f2328; --pr-sel:rgba(9,105,218,.22); --pr-scroll:#c4cbd3; --pr-scroll-hover:#a8b1bb; --pr-shadow:rgba(31,35,40,.12); --pr-ok:#1a7f37; --pr-err:#cf222e; --pr-load:#0969da; --pr-input:#1a7f37; --pr-link:#0969da; --pr-ac-active:#0969da; --pr-ac-hover:rgba(9,105,218,.08);
+    --hl-fg:#1f2328; --hl-comment:#6e7781; --hl-keyword:#cf222e; --hl-const:#0550ae; --hl-class:#953800; --hl-func:#8250df; --hl-string:#0a3069; --hl-param:#24292f; --hl-meta:#8250df; --hl-todo:#bc4c00; --hl-del:#82071e; --hl-add:#116329;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]) #pyrunner:not([data-pr-theme]), :root:not([data-theme=light]) .pr-ac:not([data-pr-theme]){
+      --pr-bg:#121314; --pr-bar:#191a1b; --pr-raised:#202122; --pr-help-bg:#17181a; --pr-border:#2a2b2c; --pr-row:#222324; --pr-fg:#bbbebf; --pr-strong:#e6e6e6; --pr-dim:#8c8c8c; --pr-gutter:#858889; --pr-curline:#242526; --pr-guide:#404040; --pr-accent:#3994bc; --pr-primary:#297aa0; --pr-primary-hover:#3994bc; --pr-caret:#e6e6e6; --pr-sel:rgba(39,103,130,.75); --pr-scroll:#3a3b3c; --pr-scroll-hover:#4e5052; --pr-shadow:rgba(0,0,0,.35); --pr-ok:#7ee787; --pr-err:#ffa198; --pr-load:#48a0c7; --pr-input:#7ee787; --pr-link:#79c0ff; --pr-ac-active:#297aa0; --pr-ac-hover:#ffffff14;
+      --hl-fg:#bbbebf; --hl-comment:#8b949e; --hl-keyword:#ff7b72; --hl-const:#79c0ff; --hl-class:#ffa657; --hl-func:#d2a8ff; --hl-string:#a5d6ff; --hl-param:#c9d1d9; --hl-meta:#d2a8ff; --hl-todo:#ffa657; --hl-del:#ffa198; --hl-add:#7ee787;
+  }
+}
+:root[data-theme=dark] #pyrunner:not([data-pr-theme]), :root[data-theme=dark] .pr-ac:not([data-pr-theme]){
+    --pr-bg:#121314; --pr-bar:#191a1b; --pr-raised:#202122; --pr-help-bg:#17181a; --pr-border:#2a2b2c; --pr-row:#222324; --pr-fg:#bbbebf; --pr-strong:#e6e6e6; --pr-dim:#8c8c8c; --pr-gutter:#858889; --pr-curline:#242526; --pr-guide:#404040; --pr-accent:#3994bc; --pr-primary:#297aa0; --pr-primary-hover:#3994bc; --pr-caret:#e6e6e6; --pr-sel:rgba(39,103,130,.75); --pr-scroll:#3a3b3c; --pr-scroll-hover:#4e5052; --pr-shadow:rgba(0,0,0,.35); --pr-ok:#7ee787; --pr-err:#ffa198; --pr-load:#48a0c7; --pr-input:#7ee787; --pr-link:#79c0ff; --pr-ac-active:#297aa0; --pr-ac-hover:#ffffff14;
+    --hl-fg:#bbbebf; --hl-comment:#8b949e; --hl-keyword:#ff7b72; --hl-const:#79c0ff; --hl-class:#ffa657; --hl-func:#d2a8ff; --hl-string:#a5d6ff; --hl-param:#c9d1d9; --hl-meta:#d2a8ff; --hl-todo:#ffa657; --hl-del:#ffa198; --hl-add:#7ee787;
+}
+/* GitHub Light */
+#pyrunner[data-pr-theme=light], .pr-ac[data-pr-theme=light]{
+    --pr-bg:#ffffff; --pr-bar:#f6f8fa; --pr-raised:#ffffff; --pr-help-bg:#f6f8fa; --pr-border:#d0d7de; --pr-row:#eaeef2; --pr-fg:#1f2328; --pr-strong:#1f2328; --pr-dim:#6e7781; --pr-gutter:#8c959f; --pr-curline:#f0f3f6; --pr-guide:#e1e4e8; --pr-accent:#0969da; --pr-primary:#0969da; --pr-primary-hover:#0550ae; --pr-caret:#1f2328; --pr-sel:rgba(9,105,218,.22); --pr-scroll:#c4cbd3; --pr-scroll-hover:#a8b1bb; --pr-shadow:rgba(31,35,40,.12); --pr-ok:#1a7f37; --pr-err:#cf222e; --pr-load:#0969da; --pr-input:#1a7f37; --pr-link:#0969da; --pr-ac-active:#0969da; --pr-ac-hover:rgba(9,105,218,.08);
+    --hl-fg:#1f2328; --hl-comment:#6e7781; --hl-keyword:#cf222e; --hl-const:#0550ae; --hl-class:#953800; --hl-func:#8250df; --hl-string:#0a3069; --hl-param:#24292f; --hl-meta:#8250df; --hl-todo:#bc4c00; --hl-del:#82071e; --hl-add:#116329;
+}
+/* VS Code Dark (uml-tool) */
+#pyrunner[data-pr-theme=dark], .pr-ac[data-pr-theme=dark]{
+    --pr-bg:#121314; --pr-bar:#191a1b; --pr-raised:#202122; --pr-help-bg:#17181a; --pr-border:#2a2b2c; --pr-row:#222324; --pr-fg:#bbbebf; --pr-strong:#e6e6e6; --pr-dim:#8c8c8c; --pr-gutter:#858889; --pr-curline:#242526; --pr-guide:#404040; --pr-accent:#3994bc; --pr-primary:#297aa0; --pr-primary-hover:#3994bc; --pr-caret:#e6e6e6; --pr-sel:rgba(39,103,130,.75); --pr-scroll:#3a3b3c; --pr-scroll-hover:#4e5052; --pr-shadow:rgba(0,0,0,.35); --pr-ok:#7ee787; --pr-err:#ffa198; --pr-load:#48a0c7; --pr-input:#7ee787; --pr-link:#79c0ff; --pr-ac-active:#297aa0; --pr-ac-hover:#ffffff14;
+    --hl-fg:#bbbebf; --hl-comment:#8b949e; --hl-keyword:#ff7b72; --hl-const:#79c0ff; --hl-class:#ffa657; --hl-func:#d2a8ff; --hl-string:#a5d6ff; --hl-param:#c9d1d9; --hl-meta:#d2a8ff; --hl-todo:#ffa657; --hl-del:#ffa198; --hl-add:#7ee787;
+}
+/* Solarized Light */
+#pyrunner[data-pr-theme=solarized-light], .pr-ac[data-pr-theme=solarized-light]{
+    --pr-bg:#fdf6e3; --pr-bar:#eee8d5; --pr-raised:#fdf6e3; --pr-help-bg:#eee8d5; --pr-border:#d6cfb8; --pr-row:#e9e2cb; --pr-fg:#586e75; --pr-strong:#073642; --pr-dim:#93a1a1; --pr-gutter:#93a1a1; --pr-curline:#eee8d5; --pr-guide:#e0d9c3; --pr-accent:#268bd2; --pr-primary:#268bd2; --pr-primary-hover:#1f6fa8; --pr-caret:#586e75; --pr-sel:rgba(38,139,210,.2); --pr-scroll:#d3cbb4; --pr-scroll-hover:#b8b09a; --pr-shadow:rgba(0,0,0,.12); --pr-ok:#859900; --pr-err:#dc322f; --pr-load:#268bd2; --pr-input:#859900; --pr-link:#268bd2; --pr-ac-active:#268bd2; --pr-ac-hover:rgba(38,139,210,.1);
+    --hl-fg:#586e75; --hl-comment:#93a1a1; --hl-keyword:#859900; --hl-const:#d33682; --hl-class:#b58900; --hl-func:#268bd2; --hl-string:#2aa198; --hl-param:#657b83; --hl-meta:#6c71c4; --hl-todo:#cb4b16; --hl-del:#dc322f; --hl-add:#859900;
+}
+/* One Dark */
+#pyrunner[data-pr-theme=one-dark], .pr-ac[data-pr-theme=one-dark]{
+    --pr-bg:#282c34; --pr-bar:#21252b; --pr-raised:#2c313a; --pr-help-bg:#21252b; --pr-border:#3a3f4b; --pr-row:#2f343e; --pr-fg:#abb2bf; --pr-strong:#e6e6e6; --pr-dim:#7f848e; --pr-gutter:#636d83; --pr-curline:#2c313c; --pr-guide:#3b4048; --pr-accent:#61afef; --pr-primary:#4d78cc; --pr-primary-hover:#61afef; --pr-caret:#528bff; --pr-sel:rgba(97,175,239,.25); --pr-scroll:#4b5263; --pr-scroll-hover:#5c6370; --pr-shadow:rgba(0,0,0,.4); --pr-ok:#98c379; --pr-err:#e06c75; --pr-load:#61afef; --pr-input:#98c379; --pr-link:#61afef; --pr-ac-active:#4d78cc; --pr-ac-hover:#ffffff12;
+    --hl-fg:#abb2bf; --hl-comment:#7f848e; --hl-keyword:#c678dd; --hl-const:#d19a66; --hl-class:#e5c07b; --hl-func:#61afef; --hl-string:#98c379; --hl-param:#e06c75; --hl-meta:#56b6c2; --hl-todo:#e5c07b; --hl-del:#e06c75; --hl-add:#98c379;
+}
+/* Monokai */
+#pyrunner[data-pr-theme=monokai], .pr-ac[data-pr-theme=monokai]{
+    --pr-bg:#272822; --pr-bar:#1e1f1c; --pr-raised:#33342d; --pr-help-bg:#1e1f1c; --pr-border:#3e3d32; --pr-row:#34352e; --pr-fg:#f8f8f2; --pr-strong:#ffffff; --pr-dim:#90908a; --pr-gutter:#90908a; --pr-curline:#3e3d32; --pr-guide:#464741; --pr-accent:#a6e22e; --pr-primary:#c4205c; --pr-primary-hover:#f92672; --pr-caret:#f8f8f0; --pr-sel:rgba(117,113,94,.6); --pr-scroll:#49483e; --pr-scroll-hover:#75715e; --pr-shadow:rgba(0,0,0,.4); --pr-ok:#a6e22e; --pr-err:#f92672; --pr-load:#66d9ef; --pr-input:#a6e22e; --pr-link:#66d9ef; --pr-ac-active:#75715e; --pr-ac-hover:#ffffff12;
+    --hl-fg:#f8f8f2; --hl-comment:#75715e; --hl-keyword:#f92672; --hl-const:#ae81ff; --hl-class:#a6e22e; --hl-func:#a6e22e; --hl-string:#e6db74; --hl-param:#fd971f; --hl-meta:#66d9ef; --hl-todo:#fd971f; --hl-del:#f92672; --hl-add:#a6e22e;
+}
+/* Dracula */
+#pyrunner[data-pr-theme=dracula], .pr-ac[data-pr-theme=dracula]{
+    --pr-bg:#282a36; --pr-bar:#21222c; --pr-raised:#343746; --pr-help-bg:#21222c; --pr-border:#44475a; --pr-row:#343746; --pr-fg:#f8f8f2; --pr-strong:#ffffff; --pr-dim:#6272a4; --pr-gutter:#6272a4; --pr-curline:#343746; --pr-guide:#424450; --pr-accent:#bd93f9; --pr-primary:#7c5bd1; --pr-primary-hover:#9b6ee8; --pr-caret:#f8f8f2; --pr-sel:rgba(68,71,90,.9); --pr-scroll:#44475a; --pr-scroll-hover:#6272a4; --pr-shadow:rgba(0,0,0,.4); --pr-ok:#50fa7b; --pr-err:#ff5555; --pr-load:#8be9fd; --pr-input:#50fa7b; --pr-link:#8be9fd; --pr-ac-active:#6272a4; --pr-ac-hover:#ffffff12;
+    --hl-fg:#f8f8f2; --hl-comment:#6272a4; --hl-keyword:#ff79c6; --hl-const:#bd93f9; --hl-class:#8be9fd; --hl-func:#50fa7b; --hl-string:#f1fa8c; --hl-param:#ffb86c; --hl-meta:#ff79c6; --hl-todo:#ffb86c; --hl-del:#ff5555; --hl-add:#50fa7b;
+}
+/* Nord */
+#pyrunner[data-pr-theme=nord], .pr-ac[data-pr-theme=nord]{
+    --pr-bg:#2e3440; --pr-bar:#272c36; --pr-raised:#3b4252; --pr-help-bg:#272c36; --pr-border:#3b4252; --pr-row:#3b4252; --pr-fg:#d8dee9; --pr-strong:#eceff4; --pr-dim:#7b88a1; --pr-gutter:#616e88; --pr-curline:#3b4252; --pr-guide:#434c5e; --pr-accent:#88c0d0; --pr-primary:#5e81ac; --pr-primary-hover:#81a1c1; --pr-caret:#d8dee9; --pr-sel:rgba(136,192,208,.25); --pr-scroll:#434c5e; --pr-scroll-hover:#4c566a; --pr-shadow:rgba(0,0,0,.35); --pr-ok:#a3be8c; --pr-err:#bf616a; --pr-load:#88c0d0; --pr-input:#a3be8c; --pr-link:#88c0d0; --pr-ac-active:#5e81ac; --pr-ac-hover:#ffffff10;
+    --hl-fg:#d8dee9; --hl-comment:#616e88; --hl-keyword:#81a1c1; --hl-const:#b48ead; --hl-class:#8fbcbb; --hl-func:#88c0d0; --hl-string:#a3be8c; --hl-param:#d8dee9; --hl-meta:#d08770; --hl-todo:#ebcb8b; --hl-del:#bf616a; --hl-add:#a3be8c;
+}
+/* 고대비 */
+#pyrunner[data-pr-theme=high-contrast], .pr-ac[data-pr-theme=high-contrast]{
+    --pr-bg:#000000; --pr-bar:#000000; --pr-raised:#0b0b0b; --pr-help-bg:#000000; --pr-border:#6fc3df; --pr-row:#333333; --pr-fg:#ffffff; --pr-strong:#ffffff; --pr-dim:#d0d0d0; --pr-gutter:#ffffff; --pr-curline:#1a1a1a; --pr-guide:#777777; --pr-accent:#f38518; --pr-primary:#1a5fb4; --pr-primary-hover:#f38518; --pr-caret:#ffffff; --pr-sel:rgba(243,133,24,.45); --pr-scroll:#6fc3df; --pr-scroll-hover:#f38518; --pr-shadow:rgba(0,0,0,.6); --pr-ok:#89d185; --pr-err:#f48771; --pr-load:#6fc3df; --pr-input:#89d185; --pr-link:#6fc3df; --pr-ac-active:#1a5fb4; --pr-ac-hover:#ffffff1a;
+    --hl-fg:#ffffff; --hl-comment:#7ca668; --hl-keyword:#569cd6; --hl-const:#b5cea8; --hl-class:#4ec9b0; --hl-func:#dcdcaa; --hl-string:#ce9178; --hl-param:#9cdcfe; --hl-meta:#c586c0; --hl-todo:#ffd700; --hl-del:#f48771; --hl-add:#89d185;
+}
+
+/* ---------- 틀 ---------- */
+#pyrunner{
+  --pr-font:13px; --pr-line:20px;
+  position:fixed; top:0; right:0; bottom:0; z-index:50; width:var(--pr-w);
+  display:flex; flex-direction:column; background:var(--pr-bg); color:var(--pr-fg);
+  border-left:1px solid var(--pr-border); box-shadow:-8px 0 24px var(--pr-shadow);
+  transform:translateX(100%); transition:transform .25s ease; visibility:hidden;
+  font:14px/1.5 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+}
+body.pr-open #pyrunner{transform:none; visibility:visible}
+body{transition:padding-right .25s ease}
+@media (min-width:1100px){body.pr-open{padding-right:var(--pr-w)}}
+@media (max-width:720px){#pyrunner{width:100vw}}
+body.pr-dragging, body.pr-dragging *{user-select:none!important; transition:none!important}
+#pyrunner [hidden]{display:none!important}
+#pyrunner button{font:inherit}
+
+/* 왼쪽 가장자리: 끌어서 너비 조절 */
+.pr-wresize{position:absolute; left:-3px; top:0; bottom:0; width:6px; cursor:col-resize; z-index:3}
+.pr-wresize:hover, .pr-wresize.dragging{background:var(--pr-accent)}
+
+/* 머리줄 */
+.pr-head{display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--pr-bar); border-bottom:1px solid var(--pr-border)}
+.pr-head b{font-size:14px; color:var(--pr-strong); margin-right:auto; white-space:nowrap}
+.pr-theme{max-width:150px; padding:3px 6px; border:1px solid var(--pr-border); border-radius:5px; background:var(--pr-raised); color:var(--pr-fg); font:inherit; font-size:12px}
+.pr-logo{width:18px; height:18px; flex:none}
+.pr-font{display:flex; align-items:center; gap:2px}
+.pr-font button, .pr-icon{
+  width:26px; height:26px; padding:0; border:1px solid var(--pr-border); border-radius:5px;
+  background:var(--pr-raised); color:var(--pr-fg); cursor:pointer; font-weight:700; line-height:1;
+}
+.pr-font button:hover, .pr-icon:hover{border-color:var(--pr-accent); color:var(--pr-accent)}
+.pr-fontlabel{width:38px; text-align:center; font:11.5px Consolas,'Cascadia Mono','D2Coding',monospace; color:var(--pr-dim)}
+.pr-icon{margin-left:2px}
+
+/* 도구 줄 */
+/* 버튼은 항상 한 줄: 좁으면 목록 칸이 줄어들고, 그래도 모자라면 가로로 밀린다 */
+.pr-tools{display:flex; flex-wrap:nowrap; align-items:center; gap:6px; padding:8px 12px; overflow-x:auto; scrollbar-width:thin; background:var(--pr-bar); border-bottom:1px solid var(--pr-border)}
+.pr-tools::-webkit-scrollbar{height:4px}
+
+.pr-pick{flex:1 1 160px; min-width:90px; padding:5px 8px; border:1px solid var(--pr-border); border-radius:5px; background:var(--pr-raised); color:var(--pr-fg); font:inherit; font-size:13px}
+.pr-btn{flex:none; white-space:nowrap; cursor:pointer; padding:5px 10px; border:1px solid var(--pr-border); border-radius:5px; background:var(--pr-raised); color:var(--pr-fg); font-size:13px}
+.pr-btn:hover{border-color:var(--pr-accent); color:var(--pr-accent)}
+.pr-btn.pr-primary{background:var(--pr-primary); border-color:var(--pr-primary); color:#fff}
+.pr-btn.pr-primary:hover{background:var(--pr-primary-hover); color:#fff}
+.pr-btn:disabled{opacity:.5; cursor:wait}
+
+/* 단축키 도움말 */
+.pr-help{max-height:45%; overflow:auto; padding:8px 12px; background:var(--pr-help-bg); border-bottom:1px solid var(--pr-border); font-size:12.5px}
+.pr-help table{border-collapse:collapse; width:100%; margin:0; font-size:12.5px}
+.pr-help th, .pr-help td{border:none; border-bottom:1px solid var(--pr-row); padding:4px 6px; text-align:left; background:none; color:var(--pr-fg)}
+.pr-help th{white-space:nowrap; font:12px Consolas,'Cascadia Mono','D2Coding',monospace; color:var(--pr-link); width:1%}
+
+/* 편집기 */
+.pr-body{display:flex; flex-direction:column; flex:1; min-height:0}
+.pr-editor-wrap{flex:1 1 60%; min-height:80px; display:flex; overflow:hidden; border-bottom:1px solid var(--pr-border)}
+.pr-gutter{
+  flex-shrink:0; width:46px; padding:10px 8px 10px 0; box-sizing:border-box; overflow:hidden;
+  background:var(--pr-bg); color:var(--pr-gutter); text-align:right; white-space:pre; user-select:none;
+  font-family:Consolas,'Cascadia Mono','D2Coding',monospace; font-size:var(--pr-font); line-height:var(--pr-line);
+}
+.pr-gutter .pr-errline{color:var(--pr-err); font-weight:700}
+.pr-code-wrap{position:relative; flex:1; overflow:hidden; background:var(--pr-bg)}
+.pr-curline{position:absolute; left:0; right:0; background:var(--pr-curline); z-index:0; pointer-events:none}
+.pr-guides{position:absolute; inset:0; z-index:0; pointer-events:none}
+.pr-guides span{position:absolute; width:1px; background:var(--pr-guide)}
+.pr-code-wrap pre.pr-hl, .pr-code-wrap textarea.pr-editor{
+  position:absolute; inset:0; margin:0; padding:10px 12px; border:none; border-radius:0; box-sizing:border-box;
+  font-family:Consolas,'Cascadia Mono','D2Coding',monospace; font-size:var(--pr-font); line-height:var(--pr-line);
+  white-space:pre; tab-size:4; letter-spacing:0;
+}
+.pr-code-wrap pre.pr-hl{z-index:1; pointer-events:none; color:var(--hl-fg); background:transparent; overflow:hidden}
+/* 입력칸(textarea)은 스크롤바가 생기면 보이는 칸이 그만큼 줄어 끝까지 더 내려간다.
+   색칠층과 줄 번호가 같은 위치까지 따라 내려가도록 아래·오른쪽 여유를 스크롤바보다 크게 둔다. */
+.pr-code-wrap pre.pr-hl{padding-bottom:40px; padding-right:40px}
+.pr-gutter{padding-bottom:40px!important}
+.pr-code-wrap pre.pr-hl code{
+  background:transparent!important; padding:0!important; margin:0!important; display:inline!important;
+  font:inherit!important; white-space:pre!important;
+}
+.pr-code-wrap textarea.pr-editor{
+  z-index:2; color:transparent; -webkit-text-fill-color:transparent; background:transparent; caret-color:var(--pr-caret);
+  resize:none; outline:none; overflow:auto;
+}
+.pr-code-wrap textarea.pr-editor::selection{background:var(--pr-sel)}
+
+/* 구문 강조 */
+#pyrunner .hljs{color:var(--hl-fg); background:transparent}
+#pyrunner .hljs-comment, #pyrunner .hljs-quote{color:var(--hl-comment)}
+#pyrunner .pr-todo{color:var(--hl-todo); font-weight:700}
+#pyrunner .hljs-keyword, #pyrunner .hljs-selector-tag{color:var(--hl-keyword)}
+#pyrunner .hljs-literal, #pyrunner .hljs-built_in, #pyrunner .hljs-type, #pyrunner .hljs-number{color:var(--hl-const)}
+#pyrunner .hljs-class .hljs-title, #pyrunner .hljs-title.class_{color:var(--hl-class)}
+#pyrunner .hljs-title.function_{color:var(--hl-func)}
+#pyrunner .hljs-title, #pyrunner .hljs-subst{color:var(--hl-fg)}
+#pyrunner .hljs-string, #pyrunner .hljs-doctag, #pyrunner .hljs-regexp{color:var(--hl-string)}
+#pyrunner .hljs-params, #pyrunner .hljs-variable, #pyrunner .hljs-template-variable, #pyrunner .hljs-attr, #pyrunner .hljs-attribute{color:var(--hl-param)}
+#pyrunner .hljs-meta, #pyrunner .hljs-symbol, #pyrunner .hljs-bullet, #pyrunner .hljs-link, #pyrunner .hljs-name, #pyrunner .hljs-tag{color:var(--hl-meta)}
+#pyrunner .hljs-deletion{color:var(--hl-del)}
+#pyrunner .hljs-addition{color:var(--hl-add)}
+
+/* 출력 칸 (위 경계선을 끌어 높이 조절) */
+.pr-resize{height:6px; flex-shrink:0; background:var(--pr-border); cursor:row-resize}
+.pr-resize:hover, .pr-resize.dragging{background:var(--pr-accent)}
+.pr-outwrap{flex:0 0 230px; min-height:60px; display:flex; flex-direction:column; background:var(--pr-bg)}
+.pr-outhead{
+  flex-shrink:0; display:flex; align-items:center; gap:10px; padding:6px 12px;
+  background:var(--pr-bar); color:var(--pr-dim); font-size:11.5px; font-weight:600; letter-spacing:.3px;
+  border-bottom:1px solid var(--pr-border);
+}
+.pr-status{margin-left:auto; font-weight:500; font-size:11px; color:var(--pr-dim)}
+.pr-status[data-kind=loading]{color:var(--pr-load)}
+.pr-status[data-kind=ok]{color:var(--pr-ok)}
+.pr-status[data-kind=err]{color:var(--pr-err)}
+.pr-copy{cursor:pointer; padding:1px 8px; border:1px solid var(--pr-border); border-radius:4px; background:transparent; color:var(--pr-dim); font-size:11px!important}
+.pr-copy:hover{border-color:var(--pr-accent); color:var(--pr-accent)}
+.pr-out{
+  flex:1; margin:0; padding:10px 12px; overflow:auto; border:none; border-radius:0; background:var(--pr-bg); color:var(--pr-fg);
+  font-family:Consolas,'Cascadia Mono','D2Coding',monospace; font-size:var(--pr-font); line-height:var(--pr-line);
+  white-space:pre-wrap; word-break:break-word;
+}
+.pr-out .pr-err{color:var(--pr-err)}
+.pr-out .pr-input{color:var(--pr-input)}
+.pr-out .pr-muted{color:var(--pr-dim)}
+.pr-out .pr-ok{color:var(--pr-ok)}
+.pr-out .pr-jump{color:var(--pr-link); text-decoration:underline; cursor:pointer}
+.pr-out .pr-jumpbtn{display:inline-block; margin-top:6px; text-decoration:none; padding:2px 8px; border:1px solid var(--pr-link); border-radius:4px}
+
+/* 스크롤바 */
+#pyrunner ::-webkit-scrollbar{width:10px; height:10px}
+#pyrunner ::-webkit-scrollbar-track, #pyrunner ::-webkit-scrollbar-corner{background:var(--pr-bg)}
+#pyrunner ::-webkit-scrollbar-thumb{background:var(--pr-scroll); border-radius:6px; border:2px solid var(--pr-bg)}
+#pyrunner ::-webkit-scrollbar-thumb:hover{background:var(--pr-scroll-hover)}
+#pyrunner *{scrollbar-color:var(--pr-scroll) var(--pr-bg)}
+
+/* 자동완성 목록 */
+.pr-ac{
+  position:fixed; z-index:600; display:none; max-height:220px; overflow-y:auto; min-width:180px;
+  background:var(--pr-raised); border:1px solid var(--pr-border); border-radius:4px; box-shadow:0 4px 16px var(--pr-shadow);
+  font:13px/1.7 Consolas,'Cascadia Mono','D2Coding',monospace;
+}
+.pr-ac.show{display:block}
+.pr-ac-item{display:flex; justify-content:space-between; gap:14px; padding:2px 10px; color:var(--pr-fg); cursor:pointer; white-space:nowrap}
+.pr-ac-item b{color:var(--pr-link)}
+.pr-ac-item:hover{background:var(--pr-ac-hover)}
+.pr-ac-item.active{background:var(--pr-ac-active); color:#fff}
+.pr-ac-item.active b{color:#fff}
+.pr-ac-kind{font-size:10px; color:var(--pr-dim); align-self:center}
+.pr-ac-item.active .pr-ac-kind{color:#e6eef5}
+
+/* 실행창이 좁으면 버튼 글자를 줄여 한 줄에 맞춘다 ('mypy 검사' → 'mypy', '출력 지우기' → '지우기') */
+#pyrunner{container-type:inline-size}
+@container (max-width:600px){
+  .pr-tools{gap:4px; padding:8px 8px}
+  .pr-tools .pr-long{display:none}
+  .pr-btn{padding:5px 7px; font-size:12px}
+  .pr-pick{flex-basis:110px; min-width:64px; font-size:12px}
+}
+@container (max-width:430px){
+  .pr-btn{padding:4px 5px; font-size:11.5px}
+  .pr-pick{min-width:52px; padding:4px 4px}
+}
+
+@media print{#pyrunner, .pr-ac{display:none!important} body.pr-open{padding-right:0}}

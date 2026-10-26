@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05. DIP 의존 역전 원칙</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top">
+  <nav>
+    <a href="index.html">목차</a>
+    <a href="chapter_04_isp.html">← 04. ISP</a>
+    <a href="chapter_06_summary.html">06. 종합 →</a>
+  </nav>
+  <h1>05. DIP 의존 역전 원칙</h1>
+  <p class="lead">"무엇을 할지"를 정하는 코드가 "어떻게 할지"를 정하는 코드에 끌려다니지 않게 만들기</p>
+</header>
+<main>
+
+<section id="goals">
+  <h2>학습목표</h2>
+  <ol>
+    <li>고수준 모듈과 저수준 모듈을 구분하고, 코드에서 의존 화살표가 어느 쪽을 향하는지 그릴 수 있다.</li>
+    <li>생성자 주입(DI)을 사용해 구현을 바꿔 끼우거나 가짜 객체로 테스트할 수 있는 코드를 작성할 수 있다.</li>
+    <li>추상을 "고수준 모듈이 필요로 하는 것" 기준으로 설계해야 하는 이유와, DIP를 적용하지 않아도 되는 경우를 설명할 수 있다.</li>
+  </ol>
+</section>
+
+<section id="concept">
+  <h2>개념</h2>
+  <p><b>DIP(Dependency Inversion Principle)</b>: <em>고수준 모듈은 저수준 모듈에 의존해서는 안 된다. 둘 다 추상에 의존해야 한다.</em></p>
+
+  <aside class="box concept">
+    <h4>📦 새 개념: 고수준 모듈 / 저수준 모듈</h4>
+    <ul>
+      <li><b>정의</b>: 고수준 모듈은 업무 규칙("주문이 완료되면 고객에게 알린다")을, 저수준 모듈은 그 규칙을 수행하는 세부 수단(SMTP 이메일, SMS 게이트웨이, 파일, DB)을 담당한다.</li>
+      <li><b>왜 구분?</b>: 업무 규칙은 잘 안 바뀌고 가치가 높지만, 세부 수단은 자주 바뀐다. 잘 안 바뀌는 쪽이 자주 바뀌는 쪽에 묶이면 세부 사항이 바뀔 때마다 핵심 코드가 흔들린다.</li>
+      <li><b>예</b>: <code>OrderNotifier</code>(고수준) / <code>EmailSender</code>, <code>SmsSender</code>(저수준)</li>
+    </ul>
+  </aside>
+
+  <p>보통 코드를 짜면 의존 방향은 자연스럽게 <b>위(업무) → 아래(세부)</b>로 흐릅니다. DIP는 그 사이에 <b>추상</b>을 두고, 저수준 모듈이 그 추상을 "구현"하게 만들어 화살표 하나를 <b>거꾸로(아래 → 추상)</b> 돌립니다. 이것이 "역전"이라는 이름의 뜻입니다.</p>
+  <pre><code>적용 전:  OrderNotifier ──▶ SmtpEmailSender          (업무가 세부에 의존)
+
+적용 후:  OrderNotifier ──▶ MessageSender(추상) ◀── EmailSender
+                                              ◀── SmsSender     (세부가 추상에 의존)</code></pre>
+
+  <aside class="box concept">
+    <h4>📦 새 개념: 의존성 주입 (DI, Dependency Injection)</h4>
+    <ul>
+      <li><b>정의</b>: 객체가 필요한 부품(의존 대상)을 스스로 만들지 않고, 바깥에서 생성자·메서드 인자로 넘겨받는 기법</li>
+      <li><b>왜 필요?</b>: 부품을 내부에서 <code>EmailSender()</code>로 직접 만들면 추상을 만들어 놓아도 결국 구현에 묶인다. 밖에서 받아야 실제로 갈아끼울 수 있다.</li>
+      <li><b>예</b>: <code>OrderNotifier(SmsSender())</code>, 테스트에서는 <code>OrderNotifier(FakeSender())</code></li>
+    </ul>
+  </aside>
+
+  <aside class="box warn">
+    <h4>⚠️ 흔한 오해: DI = DIP?</h4>
+    <p>DIP는 <b>원칙</b>(의존 방향을 추상 쪽으로), DI는 그것을 달성하는 <b>기법</b>입니다. <code>__init__(self, sender: EmailSender)</code>처럼 <em>구현 타입</em>을 주입받으면 DI는 했지만 DIP는 지키지 못한 것입니다.</p>
+  </aside>
+</section>
+
+<section id="situation">
+  <h2>상황</h2>
+  <div class="situation">
+    <p>온라인 카페 주문 시스템. 주문이 끝나면 <code>OrderNotifier</code>가 고객에게 이메일을 보냅니다. 처음엔 문제없었습니다.</p>
+    <p>그런데 어느 날 요구사항이 바뀝니다.</p>
+    <ul>
+      <li>"이메일은 잘 안 읽어요. <b>SMS로도</b> 보내 주세요."</li>
+      <li>"메일 서버 주소가 바뀌었어요."</li>
+      <li>"알림 로직 <b>테스트</b>를 돌릴 때마다 진짜 메일이 나가요!"</li>
+    </ul>
+    <p>세 요구 모두 "알림을 보낸다"는 업무 규칙과는 무관한데, 매번 <code>OrderNotifier</code>를 열어 고쳐야 합니다. 왜일까요?</p>
+  </div>
+</section>
+
+<section id="bad">
+  <h2>나쁜 코드</h2>
+  <p>아래 코드는 정상 동작합니다. 하지만 <code>[문제 N]</code> 주석을 따라가 보면 업무 규칙이 이메일 구현에 꽁꽁 묶여 있습니다.</p>
+<pre><code class="bad">"""
+5장. DIP(Dependency Inversion Principle, 의존 역전 원칙) 예제
+
+목적:
+    알림 서비스(OrderNotifier)가 이메일 발송 '구현'에 직접 묶여 있을 때 생기는 문제를 보고,
+    '추상(MessageSender)'에 의존하도록 뒤집어 문제를 해결하는 과정을 보여 준다.
+
+다루는 원칙:
+    - 고수준 모듈(업무 규칙: "주문이 완료되면 고객에게 알린다")은
+      저수준 모듈(세부 구현: SMTP 이메일, SMS 게이트웨이)에 의존하면 안 된다.
+      둘 다 '추상'에 의존해야 한다.
+    - 의존성 주입(DI)은 이 원칙을 달성하는 '기법'이다. (원칙 그 자체가 아님)
+
+실행 방법:
+    python3 code/chapter_05_dip.py
+"""
+
+from abc import ABC, abstractmethod
+
+
+# =====================================================================
+# 나쁜 코드: 고수준 모듈이 저수준 구현(EmailSender)을 직접 만들고 직접 의존한다
+# =====================================================================
+
+class SmtpEmailSender:
+    """저수준 모듈: '어떻게' 보내는지(SMTP 이메일)라는 세부 사항을 담당한다."""
+
+    def __init__(self, smtp_host: str) -&gt; None:
+        self.smtp_host = smtp_host
+
+    def send_email(self, to_address: str, subject: str, body: str) -&gt; None:
+        # 실제 SMTP 연결 대신 출력으로 흉내 낸다(외부 라이브러리/네트워크 없이 실행 가능하게).
+        print(f"[EMAIL via {self.smtp_host}] to={to_address} | {subject} | {body}")
+
+
+class BadOrderNotifier:
+    """고수준 모듈: '주문 완료 시 고객에게 알린다'는 업무 규칙을 담당한다."""
+
+    def __init__(self) -&gt; None:
+        # [문제 1] 고수준 모듈이 저수준 '구현 클래스'를 직접 생성한다.
+        #          → SMS로 바꾸거나 서버 주소가 바뀌면 이 업무 클래스를 열어 고쳐야 한다.
+        #          → 의존 화살표: BadOrderNotifier ──▶ SmtpEmailSender (구현)
+        self.sender = SmtpEmailSender("smtp.cafe-shop.kr")
+
+    def notify_order_completed(self, customer_email: str, order_id: int) -&gt; None:
+        # [문제 2] 메서드 이름·인자 형식(send_email, to_address, subject)까지 이메일 전용이다.
+        #          → 업무 규칙이 '이메일'이라는 세부 사항의 모양에 오염되어 있다.
+        #          → SMS는 제목(subject)이 없고 받는 사람이 전화번호이므로 그대로 갈아끼울 수 없다.
+        self.sender.send_email(
+            to_address=customer_email,
+            subject="주문 완료",
+            body=f"주문 #{order_id} 이(가) 완료되었습니다.",
+        )
+        # [문제 3] 테스트할 때도 진짜 SmtpEmailSender가 만들어진다.
+        #          → 실제 메일 서버 없이 '알림이 1번 보내졌는지'를 확인할 방법이 없다.</code></pre>
+  <ul>
+    <li><b>[문제 1]</b> 고수준 모듈이 <code>SmtpEmailSender(...)</code>를 직접 생성 → 구현 교체·설정 변경 시 업무 클래스를 수정해야 합니다.</li>
+    <li><b>[문제 2]</b> 호출 모양(<code>send_email</code>, <code>subject</code>)이 이메일 전용 → SMS로 바꾸려면 호출부까지 고쳐야 합니다.</li>
+    <li><b>[문제 3]</b> 테스트에서 가짜를 끼울 틈이 없음 → 실제 발송 없이 동작을 검증할 수 없습니다.</li>
+  </ul>
+</section>
+
+<section id="good">
+  <h2>개선 코드</h2>
+  <p>업무 규칙이 필요로 하는 것은 "누군가에게 메시지를 전달하는 무언가"뿐입니다. 그것을 추상 <code>MessageSender</code>로 정의하고, 구현은 밖에서 주입합니다.</p>
+<pre><code class="good"># =====================================================================
+# 개선 코드: 고수준 모듈이 소유한 '추상'에 양쪽 모두 의존한다
+# =====================================================================
+
+class MessageSender(ABC):
+    """[해결 1] 추상(인터페이스).
+
+    왜 이름이 EmailSender가 아니라 MessageSender인가?
+    → 이 추상은 '고수준 모듈이 필요로 하는 것'(누군가에게 메시지를 전달)을 기준으로 정의한다.
+      저수준 구현의 모양(SMTP, 제목 등)을 그대로 옮겨 오면 이름만 추상일 뿐 다시 이메일에 묶인다.
+    """
+
+    @abstractmethod
+    def send(self, recipient: str, message: str) -&gt; None:
+        """recipient에게 message를 전달한다. 전달 수단은 구현 클래스가 결정한다."""
+
+
+class EmailSender(MessageSender):
+    """저수준 모듈 1: 추상(MessageSender)을 '구현'한다 → 의존 화살표가 추상 쪽을 향한다(역전)."""
+
+    def __init__(self, smtp_host: str) -&gt; None:
+        self.smtp_host = smtp_host
+
+    def send(self, recipient: str, message: str) -&gt; None:
+        # 이메일에만 필요한 '제목'은 저수준 모듈 내부 사정으로 숨긴다.
+        print(f"[EMAIL via {self.smtp_host}] to={recipient} | 알림 | {message}")
+
+
+class SmsSender(MessageSender):
+    """저수준 모듈 2: 요구 변경('SMS로도 보내 주세요')을 새 클래스 추가만으로 흡수한다."""
+
+    def send(self, recipient: str, message: str) -&gt; None:
+        print(f"[SMS] to={recipient} | {message}")
+
+
+class FakeSender(MessageSender):
+    """테스트용 가짜 구현: 실제로 보내지 않고 '보낸 기록'만 남긴다.
+
+    [해결 3] 추상에 의존하기 때문에 테스트에서 이 가짜를 꽂아 넣을 수 있다.
+    """
+
+    def __init__(self) -&gt; None:
+        self.sent: list[tuple[str, str]] = []
+
+    def send(self, recipient: str, message: str) -&gt; None:
+        self.sent.append((recipient, message))
+
+
+class OrderNotifier:
+    """고수준 모듈: 업무 규칙만 남고, '어떻게 보내는지'는 전혀 모른다."""
+
+    def __init__(self, sender: MessageSender) -&gt; None:
+        # [해결 2] 의존성 주입(DI, 생성자 주입): 필요한 부품을 스스로 만들지 않고 밖에서 받는다.
+        #          → 타입 힌트도 구현(EmailSender)이 아니라 추상(MessageSender)이다.
+        #          → 이메일↔SMS 교체, 서버 주소 변경 시 이 클래스는 한 줄도 고치지 않는다.
+        self.sender = sender
+
+    def notify_order_completed(self, recipient: str, order_id: int) -&gt; None:
+        self.sender.send(recipient, f"주문 #{order_id} 이(가) 완료되었습니다.")
+
+
+def build_notifier(channel: str) -&gt; OrderNotifier:
+    """조립 지점(Composition Root): 어떤 구현을 쓸지는 프로그램 '가장자리' 한 곳에서만 결정한다.
+
+    요구가 바뀌어 채널을 추가해도 여기와 새 Sender 클래스만 손대면 된다.
+    """
+    if channel == "sms":
+        return OrderNotifier(SmsSender())
+    return OrderNotifier(EmailSender("smtp.cafe-shop.kr"))
+
+
+if __name__ == "__main__":
+    print("=== 나쁜 코드: 이메일에 고정 ===")
+    BadOrderNotifier().notify_order_completed("kim@example.com", 101)
+
+    print("\n=== 개선 코드: 같은 OrderNotifier에 구현만 바꿔 끼우기 ===")
+    build_notifier("email").notify_order_completed("kim@example.com", 102)
+    build_notifier("sms").notify_order_completed("010-1234-5678", 103)
+
+    print("\n=== 개선 코드: 가짜 구현으로 테스트 ===")
+    fake = FakeSender()
+    OrderNotifier(fake).notify_order_completed("test-user", 104)
+    assert fake.sent == [("test-user", "주문 #104 이(가) 완료되었습니다.")]
+    print(f"보낸 기록: {fake.sent}")
+    print("테스트 통과: 실제 메일 서버 없이 알림 동작을 확인했습니다.")</code></pre>
+  <p>실행 결과(<code>python3 code/chapter_05_dip.py</code>):</p>
+  <pre><code>=== 나쁜 코드: 이메일에 고정 ===
+[EMAIL via smtp.cafe-shop.kr] to=kim@example.com | 주문 완료 | 주문 #101 이(가) 완료되었습니다.
+
+=== 개선 코드: 같은 OrderNotifier에 구현만 바꿔 끼우기 ===
+[EMAIL via smtp.cafe-shop.kr] to=kim@example.com | 알림 | 주문 #102 이(가) 완료되었습니다.
+[SMS] to=010-1234-5678 | 주문 #103 이(가) 완료되었습니다.
+
+=== 개선 코드: 가짜 구현으로 테스트 ===
+보낸 기록: [('test-user', '주문 #104 이(가) 완료되었습니다.')]
+테스트 통과: 실제 메일 서버 없이 알림 동작을 확인했습니다.</code></pre>
+  <h3>같은 요구 변경을 이제 어떻게 흡수하나</h3>
+  <table>
+    <tr><th>요구 변경</th><th>나쁜 코드</th><th>개선 코드</th></tr>
+    <tr><td>SMS로도 보내기</td><td><code>BadOrderNotifier</code> 수정 + 호출 모양 변경</td><td><code>SmsSender</code> 클래스 <b>추가</b>, 조립 지점에서 선택 (<code>OrderNotifier</code> 무수정)</td></tr>
+    <tr><td>메일 서버 주소 변경</td><td>업무 클래스 안의 문자열 수정</td><td>조립 지점(<code>build_notifier</code>) 한 곳만 수정</td></tr>
+    <tr><td>테스트에서 실제 발송 막기</td><td>불가능</td><td><code>FakeSender</code> 주입 후 <code>sent</code> 기록 확인</td></tr>
+  </table>
+
+  <aside class="box tip">
+    <h4>💡 핵심 포인트: 추상은 "위"가 소유한다</h4>
+    <p>추상의 이름과 메서드 모양은 <b>고수준 모듈의 필요</b>에서 나와야 합니다. <code>send_email(to, subject, body)</code>를 그대로 추상 메서드로 옮기면 이름만 추상일 뿐 여전히 이메일에 의존합니다. 그래서 <code>MessageSender.send(recipient, message)</code>로 정의했습니다.</p>
+  </aside>
+  <aside class="box tip">
+    <h4>💡 핵심 포인트: 조립 지점 (Composition Root)</h4>
+    <p>"어떤 구현을 쓸지"는 프로그램 가장자리(예: <code>main</code>, <code>build_notifier</code>) 한 곳에서만 결정합니다. 그래야 구체 클래스 이름이 업무 코드 곳곳에 흩어지지 않습니다.</p>
+  </aside>
+  <p>실행: <code>python3 code/chapter_05_dip.py</code></p>
+</section>
+
+<section id="summary">
+  <h2>정리</h2>
+  <table>
+    <tr><th></th><th>DIP 위반</th><th>DIP 적용</th></tr>
+    <tr><td>의존 방향</td><td>업무 → 구현</td><td>업무 → 추상 ← 구현</td></tr>
+    <tr><td>부품 생성</td><td>클래스 내부에서 직접 생성</td><td>밖에서 주입(DI), 조립 지점에서 결정</td></tr>
+    <tr><td>구현 교체</td><td>업무 클래스 수정</td><td>새 구현 추가 + 조립 지점 수정</td></tr>
+    <tr><td>테스트</td><td>실제 외부 자원 필요</td><td>가짜 객체로 대체</td></tr>
+  </table>
+  <aside class="box warn">
+    <h4>⚠️ 과잉 적용 주의</h4>
+    <ul>
+      <li><code>list</code>, <code>dict</code>, <code>datetime</code> 같은 표준 라이브러리나 안정적인 순수 함수까지 추상으로 감쌀 필요는 없습니다. DIP가 값을 내는 곳은 <b>자주 바뀌거나 외부 자원(네트워크·DB·파일·시간)에 닿는 경계</b>입니다.</li>
+      <li>구현이 하나뿐이고 바뀔 조짐도, 테스트에서 대체할 필요도 없다면 추상은 읽을 파일만 늘립니다. 필요해지는 순간 추출해도 늦지 않습니다(6장 YAGNI).</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>📦 새 개념: 순수 함수 (Pure Function)</h4>
+    <ul>
+      <li><b>정의</b>: 같은 입력에는 항상 같은 결과를 돌려주고, 파일·네트워크·전역 변수 같은 바깥 상태를 읽거나 바꾸지 않는 함수</li>
+      <li><b>왜 중요?</b>: 바깥 자원에 닿지 않으니 테스트에서 가짜로 바꿀 이유가 없다. 그래서 추상으로 감쌀 대상이 아니다</li>
+      <li><b>예</b>: <code>def add_vat(price: int) -&gt; int: return price * 110 // 100</code> — 입력이 같으면 결과도 늘 같다</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="quiz">
+  <h2>이해 점검</h2>
+
+  <div class="q" data-type="choice" data-answer="2">
+    <h4>Q1. [개념 확인] (학습목표 1)</h4>
+    <p>DIP를 가장 정확하게 설명한 것은?</p>
+    <ol class="options">
+      <li>고수준 모듈은 필요한 저수준 객체를 직접 생성해 책임을 분명히 해야 한다.</li>
+      <li>고수준 모듈과 저수준 모듈 모두 추상에 의존해야 한다.</li>
+      <li>프로젝트의 모든 클래스마다 짝이 되는 인터페이스를 만들어야 한다.</li>
+      <li>저수준 모듈이 고수준 모듈의 메서드를 직접 호출하도록 호출 방향을 뒤집어야 한다.</li>
+    </ol>
+    <div class="explain"><b>정답: 2</b><br>DIP의 핵심은 "둘 다 추상에 의존"입니다.<br>
+    <b>왜 오답이 매력적인가</b>: 1은 오히려 나쁜 코드의 [문제 1]입니다. 3은 과잉 적용으로, 바뀌지 않는 곳까지 추상을 만들라는 뜻이 아닙니다. 4는 "역전"이라는 단어 때문에 그럴듯하지만, 뒤집히는 것은 <em>호출</em> 방향이 아니라 <em>소스 코드 의존(import·타입)</em> 방향입니다. 실행 중 호출은 여전히 업무 → 구현으로 흐릅니다.</div>
+  </div>
+
+  <div class="q" data-type="ox" data-answer="2">
+    <h4>Q2. [개념 확인] (학습목표 2)</h4>
+    <p>다음 코드는 생성자로 부품을 주입받으므로 DIP를 지킨 것이다. (O/X)</p>
+<pre><code>class OrderNotifier:
+    def __init__(self, sender: SmtpEmailSender) -&gt; None:
+        self.sender = sender</code></pre>
+    <ol class="options"><li>O</li><li>X</li></ol>
+    <div class="explain"><b>정답: X</b><br>주입(DI)은 했지만 타입이 구현 클래스 <code>SmtpEmailSender</code>이므로 여전히 구현에 의존합니다. DI는 기법, DIP는 원칙입니다.<br>
+    <b>왜 오답이 매력적인가</b>: "밖에서 받는다"는 모양이 개선 코드와 똑같아 보이기 때문입니다. 타입 힌트(그리고 호출하는 메서드 모양)가 추상인지 구현인지를 확인해야 합니다.</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q3. [위반 찾기] (학습목표 1)</h4>
+    <p>아래 코드에서 DIP 위반 지점을 찾고, 의존 화살표를 그려 보세요. 요구가 "주문 기록을 파일 대신 DB에 저장"으로 바뀌면 어느 줄을 고쳐야 하나요?</p>
+<pre><code>class FileOrderLog:
+    def write_line(self, path: str, line: str) -&gt; None:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+
+class OrderService:
+    def __init__(self) -&gt; None:
+        self.log = FileOrderLog()
+
+    def complete(self, order_id: int) -&gt; None:
+        self.log.write_line("orders.txt", f"{order_id} 완료")</code></pre>
+    <div class="explain"><b>모범 답안</b><br>
+    ① <code>self.log = FileOrderLog()</code>: 고수준 <code>OrderService</code>가 저수준 구현을 직접 생성 (화살표: <code>OrderService → FileOrderLog</code>).<br>
+    ② <code>write_line("orders.txt", ...)</code>: 파일 경로라는 세부 사항이 업무 코드에 새어 들어옴 (나쁜 코드의 [문제 2]와 같은 유형).<br>
+    DB로 바꾸면 <code>__init__</code>과 <code>complete</code> 둘 다 고쳐야 합니다.<br>
+    <b>흔한 함정</b>: ①만 찾고 ②를 놓치기 쉽습니다. 생성만 밖으로 빼도 메서드 모양이 파일 전용이면 DB 구현이 같은 모양을 따를 수 없습니다.</div>
+  </div>
+
+  <div class="q" data-type="choice" data-answer="3">
+    <h4>Q4. [개념 적용] (학습목표 3)</h4>
+    <p>알림 기능용 추상을 만들려고 합니다. DIP의 취지에 가장 맞는 설계는?</p>
+    <ol class="options">
+      <li><code>class Sender(ABC): def send_email(self, to, subject, body, smtp_host): ...</code></li>
+      <li><code>class Sender(ABC): def send_email(self, to, subject, body): ...</code> 와 <code>def send_sms(self, phone, text): ...</code>를 둘 다 추상 메서드로</li>
+      <li><code>class MessageSender(ABC): def send(self, recipient, message): ...</code></li>
+      <li>추상 없이 <code>OrderNotifier</code> 안에서 <code>if channel == "sms": ... else: ...</code>로 분기</li>
+    </ol>
+    <div class="explain"><b>정답: 3</b><br>고수준 모듈이 필요로 하는 것("수신자에게 메시지 전달")만 담았습니다.<br>
+    <b>왜 오답이 매력적인가</b>: 1은 ABC라서 추상처럼 보이지만 <code>smtp_host</code> 같은 세부 사항이 그대로 노출됩니다. 2는 "모든 채널을 지원"하는 것 같지만 이메일 구현에 <code>send_sms</code>를 억지로 구현하게 만드는 뚱뚱한 인터페이스(4장 ISP 위반)입니다. 4는 동작은 하지만 채널이 늘 때마다 업무 클래스를 수정해야 합니다(2장 OCP 위반).</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q5. [리팩터링 실습] (학습목표 2)</h4>
+    <p>아래 코드를 DIP에 맞게 고치세요. 조건: (a) 추상 <code>PaymentGateway</code> 정의, (b) 생성자 주입, (c) 실제 결제 없이 <code>CheckoutService</code>를 테스트할 수 있는 가짜 구현 작성.</p>
+<pre><code>class KakaoPayClient:
+    def kakao_request(self, amount_won: int) -&gt; bool:
+        print(f"카카오페이 {amount_won}원 결제")
+        return True
+
+class CheckoutService:
+    def pay(self, amount: int) -&gt; str:
+        client = KakaoPayClient()
+        ok = client.kakao_request(amount)
+        return "결제 성공" if ok else "결제 실패"</code></pre>
+    <div class="explain"><b>모범 답안 (예시)</b>
+<pre><code>from abc import ABC, abstractmethod
+
+class PaymentGateway(ABC):
+    @abstractmethod
+    def charge(self, amount: int) -&gt; bool: ...
+
+class KakaoPayGateway(PaymentGateway):
+    def charge(self, amount: int) -&gt; bool:
+        print(f"카카오페이 {amount}원 결제")
+        return True
+
+class FakeGateway(PaymentGateway):
+    def __init__(self, result: bool) -&gt; None:
+        self.result = result
+        self.charged: list[int] = []
+    def charge(self, amount: int) -&gt; bool:
+        self.charged.append(amount)
+        return self.result
+
+class CheckoutService:
+    def __init__(self, gateway: PaymentGateway) -&gt; None:
+        self.gateway = gateway
+    def pay(self, amount: int) -&gt; str:
+        return "결제 성공" if self.gateway.charge(amount) else "결제 실패"
+
+# 테스트: 실패 경로도 실제 결제 없이 확인 가능
+assert CheckoutService(FakeGateway(False)).pay(5000) == "결제 실패"</code></pre>
+    <b>채점 포인트</b>: 메서드 이름을 <code>kakao_request</code>가 아닌 중립적인 <code>charge</code>로 바꿨는가(학습목표 3), 메서드 안에서 <code>KakaoPayClient()</code>를 만들지 않는가, 가짜로 실패 경로까지 테스트할 수 있는가.</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q6. [서술형] (학습목표 3)</h4>
+    <p>팀원이 "DIP가 좋다니까 금액을 원화 문자열로 바꾸는 <code>format_won(amount)</code> 함수에도 <code>MoneyFormatter</code> 추상 클래스와 주입 구조를 만들자"고 합니다. 찬성/반대 의견과 그 이유를 3문장 이내로 쓰세요.</p>
+    <div class="explain"><b>모범 답안</b><br>반대합니다. <code>format_won</code>은 외부 자원에 닿지 않는 순수 함수이고, 구현이 하나뿐이며 바꿀 요구도, 테스트에서 가짜로 대체할 이유도 없습니다. DIP는 자주 바뀌거나 네트워크·DB·파일 같은 외부 경계에 닿는 의존에 적용할 때 가치가 있으며, 여기서는 파일과 간접 단계만 늘리는 과잉 설계입니다.<br>
+    <b>왜 찬성이 매력적인가</b>: "원칙은 많이 지킬수록 좋다"고 생각하기 쉽기 때문입니다. 하지만 원칙은 변경 비용을 줄이기 위한 수단이며, 변경이 없는 곳에서는 비용만 남습니다.</div>
+  </div>
+</section>
+
+</main>
+<nav class="pager">
+  <a href="chapter_04_isp.html">← 04. ISP 인터페이스 분리 원칙</a>
+  <a href="chapter_06_summary.html">06. 종합: 도서관 대출 시스템 →</a>
+</nav>
+<script src="assets/quiz.js"></script>
+<script src="assets/pyrunner.js"></script>
+</body>
+</html>

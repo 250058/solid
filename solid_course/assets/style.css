@@ -1,0 +1,53 @@
+:root{--bg:#fff;--fg:#1d2330;--muted:#5b6475;--line:#e2e6ee;--accent:#2f5bea;--card:#f6f8fc;
+--bad:#fff3f1;--badb:#e5533d;--good:#effaf3;--goodb:#2e9d5b;--code:#f3f5f9;
+--concept:#eef3ff;--tip:#fff9e6;--warn:#fff1ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#13161d;--fg:#e6e9f0;--muted:#9aa3b5;--line:#2a3040;--accent:#7c9bff;--card:#1b2030;
+--bad:#2a1b1b;--badb:#ff7a66;--good:#16261d;--goodb:#4cc77f;--code:#1b2030;--concept:#1a2340;--tip:#2a2615;--warn:#2d1c18}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+main,header.top,nav.pager{max-width:860px;margin:0 auto;padding:0 16px}
+header.top{padding-top:24px}
+header.top nav a{color:var(--accent);text-decoration:none;margin-right:12px;font-size:14px}
+h1{font-size:30px;line-height:1.3;margin:12px 0}
+h2{font-size:22px;margin:40px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+h3{font-size:18px;margin:24px 0 6px}
+.lead{color:var(--muted)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:var(--code);padding:1px 5px;border-radius:4px}
+pre{margin:12px 0;padding:14px 16px;overflow-x:auto;border-radius:8px;background:var(--code);border-left:4px solid var(--line);line-height:1.55}
+pre code{background:none;padding:0;font-size:13.5px}
+pre:has(code.bad){background:var(--bad);border-left-color:var(--badb)}
+pre:has(code.good){background:var(--good);border-left-color:var(--goodb)}
+pre:has(code.bad)::before,pre:has(code.good)::before{display:block;font:700 12px sans-serif;margin-bottom:6px}
+pre:has(code.bad)::before{content:"✗ 나쁜 코드";color:var(--badb)}
+pre:has(code.good)::before{content:"✓ 개선 코드";color:var(--goodb)}
+.box{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--line)}
+.box h4{margin:0 0 6px;font-size:15px}
+.box ul{margin:4px 0;padding-left:20px}
+.box.concept{background:var(--concept);border-left:4px solid var(--accent)}
+.box.tip{background:var(--tip);border-left:4px solid #e0a800}
+.box.warn{background:var(--warn);border-left:4px solid var(--badb)}
+.situation{background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:12px 16px;margin:12px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--card)}
+section.quiz{margin-top:48px;padding:8px 16px 16px;border:2px solid var(--accent);border-radius:12px}
+.q{margin:20px 0;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.q:last-child{border-bottom:0}
+.q h4{margin:0 0 6px}
+.options{list-style:none;padding:0;margin:8px 0}
+.options li{padding:8px 12px;margin:6px 0;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--card)}
+.options li:hover{border-color:var(--accent)}
+.options li.right{background:var(--good);border-color:var(--goodb)}
+.options li.wrong{background:var(--bad);border-color:var(--badb)}
+.q.done .options li{cursor:default}
+.explain{display:none;margin-top:8px;padding:10px 14px;background:var(--card);border-radius:8px}
+.explain.show{display:block}
+button.reveal{cursor:pointer;border:1px solid var(--accent);background:transparent;color:var(--accent);padding:6px 12px;border-radius:6px;font:inherit;font-size:14px}
+.score{font-weight:700;margin-top:12px}
+nav.pager{display:flex;justify-content:space-between;padding-top:32px;padding-bottom:48px}
+nav.pager a{color:var(--accent);text-decoration:none}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));grid-auto-rows:1fr;gap:12px;padding:0;list-style:none}
+.cards a{display:block;height:100%;box-sizing:border-box;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;text-decoration:none}
+.cards a:hover{border-color:var(--accent)}
+.cards small{color:var(--muted)}
+@media print{section.quiz .explain{display:block}.options li{cursor:default}header.top nav,nav.pager{display:none}}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파이썬 SOLID 수업</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top">
+  <nav><a href="index.html">목차</a><a href="final_check.html">종합 진단표</a></nav>
+  <h1>파이썬으로 탐구하는 SOLID 원칙</h1>
+  <p class="lead">개념기반탐구학습지 · 3차시(차시당 45~50분). 설명을 읽는 수업이 아니라, 예측하고 · 실행하고 · 분류하고 · 토론하고 · 직접 규칙을 말해 보는 수업입니다.</p>
+</header>
+<main>
+
+<section id="audience">
+  <h2>이 자료는</h2>
+  <ul>
+    <li><b>대상</b>: 파이썬 클래스(<code>class</code>, <code>__init__</code>, 메서드, 상속)를 써 본 학습자</li>
+    <li><b>환경</b>: Python 3.12 이상, 표준 라이브러리만 사용. 인터넷 없이 동작합니다.</li>
+    <li><b>학습지 사용법</b>: 입력칸에 쓰면 이 브라우저에 자동 저장됩니다. 인쇄(PDF)도 가능합니다. 정답은 학습지에 없습니다. 먼저 스스로 써 보세요.</li>
+  </ul>
+</section>
+
+<section id="toc">
+  <h2>3차시 탐구학습지</h2>
+  <ul class="cards">
+    <li><a href="worksheets/session_1.html"><b>1차시. 변경에 강한 코드</b><br><small>렌즈: 변경 · SRP, OCP · 카페 주문과 할인 정책</small></a></li>
+    <li><a href="worksheets/session_2.html"><b>2차시. 코드 사이의 약속</b><br><small>렌즈: 약속 · LSP, ISP · 새와 펭귄, 복합기</small></a></li>
+    <li><a href="worksheets/session_3.html"><b>3차시. 의존의 방향과 설계 프로젝트</b><br><small>렌즈: 의존 · DIP, 종합 · 알림 서비스, 도서관 대출</small></a></li>
+  </ul>
+</section>
+
+<section id="pre">
+  <h2>사전 읽기·참고 (교재형 자료)</h2>
+  <p>학습지 활동을 하다가 개념이 더 필요하면 참고하세요. 수업 전에는 0장(OOP 복습)을 읽어 오면 좋습니다.</p>
+  <ul class="cards">
+    <li><a href="chapter_00_oop_review.html"><b>0장. OOP 복습</b><br><small>사전 읽기 권장 · 추상화, 상속, 다형성, ABC</small></a></li>
+    <li><a href="chapter_01_srp.html"><b>1장. SRP</b><br><small>단일 책임 원칙 · 카페 주문서</small></a></li>
+    <li><a href="chapter_02_ocp.html"><b>2장. OCP</b><br><small>개방-폐쇄 원칙 · 쇼핑몰 할인 정책</small></a></li>
+    <li><a href="chapter_03_lsp.html"><b>3장. LSP</b><br><small>리스코프 치환 원칙 · 새와 펭귄</small></a></li>
+    <li><a href="chapter_04_isp.html"><b>4장. ISP</b><br><small>인터페이스 분리 원칙 · 복합기</small></a></li>
+    <li><a href="chapter_05_dip.html"><b>5장. DIP</b><br><small>의존 역전 원칙 · 주문 알림</small></a></li>
+    <li><a href="chapter_06_summary.html"><b>6장. 종합</b><br><small>5원칙 종합 · 도서관 대출 시스템</small></a></li>
+    <li><a href="final_check.html"><b>종합 진단표</b><br><small>수업 후 자기 점검</small></a></li>
+  </ul>
+</section>
+
+<section id="run">
+  <h2>시작 코드 내려받기·실행법</h2>
+  <p>학습지가 안내하는 파일을 아래에서 내려받아(클릭하면 저장됩니다) 한 폴더에 모아 두세요. 전체를 한 번에 받으려면 <a href="solid_starter_code.zip" download>시작 코드 전체(zip)</a>를 받아 압축을 풀면 됩니다. 학습지에 적힌 <code>code/s1_cafe_order.py</code> 같은 경로는 모두 이 파일을 뜻합니다.</p>
+  <ul class="cards">
+    <li><a href="worksheets/code/s1_cafe_order.py" download="s1_cafe_order.py"><b>s1_cafe_order.py</b><br><small>1차시 · 활동 1-2 · 한입카페 주문</small></a></li>
+    <li><a href="worksheets/code/s1_discount.py" download="s1_discount.py"><b>s1_discount.py</b><br><small>1차시 · 활동 1-4 · 할인 정책</small></a></li>
+    <li><a href="worksheets/code/s1_transfer_parcel.py" download="s1_transfer_parcel.py"><b>s1_transfer_parcel.py</b><br><small>1차시 · 활동 1-7 · 택배 요금</small></a></li>
+    <li><a href="worksheets/code/s2_birds.py" download="s2_birds.py"><b>s2_birds.py</b><br><small>2차시 · 활동 2-1~2-3 · 새와 펭귄</small></a></li>
+    <li><a href="worksheets/code/s2_office_machine.py" download="s2_office_machine.py"><b>s2_office_machine.py</b><br><small>2차시 · 활동 2-4 · 복합기</small></a></li>
+    <li><a href="worksheets/code/s2_transfer_smarthome.py" download="s2_transfer_smarthome.py"><b>s2_transfer_smarthome.py</b><br><small>2차시 · 활동 2-7 · 스마트홈</small></a></li>
+    <li><a href="worksheets/code/s3_notifier.py" download="s3_notifier.py"><b>s3_notifier.py</b><br><small>3차시 · 활동 3-1~3-2 · 알림 서비스</small></a></li>
+    <li><a href="worksheets/code/s3_library_project.py" download="s3_library_project.py"><b>s3_library_project.py</b><br><small>3차시 · 활동 3-4 · 도서관 대출</small></a></li>
+    <li><a href="worksheets/code/s3_yagni_compare.py" download="s3_yagni_compare.py"><b>s3_yagni_compare.py</b><br><small>3차시 · 활동 3-5 · 설계안 비교</small></a></li>
+    <li><a href="worksheets/code/s3_transfer_weather.py" download="s3_transfer_weather.py"><b>s3_transfer_weather.py</b><br><small>3차시 · 활동 3-6 · 기상 관측소</small></a></li>
+  </ul>
+  <h3>실행하기</h3>
+  <p>터미널(윈도우는 명령 프롬프트)을 열어 파일을 저장한 폴더로 이동한 뒤 실행하고, <code># TODO(학생)</code> 부분을 직접 고칩니다. Python 3.12 이상이 필요합니다.</p>
+<pre><code>cd 파일을_저장한_폴더
+python3 s1_cafe_order.py</code></pre>
+  <p><small>윈도우에서 <code>python3</code>가 안 되면 <code>python</code> 또는 <code>py</code>로 실행하세요. 폴더 이동이 어려우면 코드 편집기(VS Code, IDLE 등)에서 파일을 열어 실행해도 됩니다.</small></p>
+  <h4>설치 없이 브라우저에서 실행하기</h4>
+  <p>학습지(1~3차시)와 사전 읽기 자료(00~06장) 페이지에서는 <b>Alt+P</b>를 누르면 오른쪽에서 Python 실행창이 나옵니다. 다시 <b>Alt+P</b>를 누르면(실행창 안에서는 <b>Esc</b>도 됩니다) 들어갑니다.</p>
+  <ul>
+    <li>코드를 쓰고 <b>▶ 실행</b> 또는 <b>Ctrl+Enter</b>(F5)로 실행하면 아래 칸에 결과가 나옵니다. <code>input()</code>을 쓰면 입력창이 뜹니다.</li>
+    <li>VS Code와 비슷한 편집기입니다. 구문 색칠, 줄 번호, 자동완성(Ctrl+Space), 괄호 자동 닫기, 주석 토글(Ctrl+/), 줄 복제·이동 같은 단축키를 쓸 수 있고, 전체 단축키는 실행창의 <b>?</b> 버튼에 있습니다.</li>
+    <li>오류가 나면 오류 난 줄 번호를 눌러 그 줄로 바로 갈 수 있습니다.</li>
+    <li><b>mypy 검사</b>(Ctrl+Shift+Enter)로 타입 힌트를 검사합니다. 하위 클래스가 상위 클래스의 약속(매개변수·반환 타입)을 어기면 LSP 위반으로 알려 줍니다. 처음 누를 때 mypy를 설치하느라 20초쯤 걸립니다.</li>
+    <li><b>코드 가져오기</b> 목록에서 이 페이지의 본문 코드나 위의 <b>시작 코드 파일</b>, 교재 예제 파일을 골라 불러올 수 있습니다. 코드 조각에 빠진 <code>import</code> 줄(예: <code>from abc import ABC, abstractmethod</code>)은 불러올 때 자동으로 채워지고, <b>Ctrl+Shift+I</b>로 언제든 다시 채울 수 있습니다. 교재(00~06장)에서 <b>본문 코드 전부 이어 붙이기</b>를 고르면 그 장의 예제를 바로 실행해 볼 수 있습니다.</li>
+    <li>실행창 머리줄에서 편집기 테마(자동, GitHub Light, VS Code Dark, Solarized Light, One Dark, Monokai, Dracula, Nord, 고대비)를 고를 수 있습니다.</li>
+    <li>코드를 <b>.py 파일로 저장·불러오기</b>(Ctrl+S / Ctrl+O)할 수 있고, 실행창 왼쪽 가장자리와 출력 칸 위쪽 경계선을 끌어 크기를 바꿀 수 있습니다.</li>
+    <li>실행창에서 고친 코드는 페이지마다 브라우저에 자동 저장됩니다. 실행창을 처음 열 때 Python을 불러오느라 몇 초 걸리고, 인터넷 연결이 필요합니다.</li>
+    <li>파일 읽기·쓰기는 브라우저 안의 임시 공간에서만 일어나므로, 학습지 시작 코드를 고치고 제출할 때는 위의 터미널 방식으로 실행하세요.</li>
+  </ul>
+  <aside class="box tip">
+    <h4>💡 핵심 포인트</h4>
+    <p>실행 결과를 먼저 <b>예측</b>하고, 틀렸다면 왜 틀렸는지 적어 보세요. 그 차이가 배움입니다.</p>
+  </aside>
+</section>
+
+</main>
+<nav class="pager"><span></span><a href="worksheets/session_1.html">1차시 시작하기 →</a></nav>
+</body>
+</html>

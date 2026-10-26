@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1차시 변경 탐구 학습지</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/worksheet.css">
+<script src="../assets/worksheet.js" defer></script>
+<script src="../assets/pyrunner.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <nav>
+    <a href="../index.html">목차</a>
+    <a href="../chapter_00_oop_review.html">사전 읽기: 00 OOP 복습</a>
+    <a href="session_2.html">다음: 2차시 →</a>
+  </nav>
+  <h1>1차시. 요구가 바뀌면, 코드는 어디가 바뀔까?</h1>
+  <p class="lead">한입카페 주문 프로그램에 들어온 변경 요청을 직접 반영해 보면서, 변경에 강한 코드의 규칙을 스스로 찾아냅니다.</p>
+  <div class="ws-meta">
+    <span>개념적 렌즈: 변경(Change)</span>
+    <span>활동 8개 · 49분</span>
+    <span>준비물: Python 3.12 이상, 시작 코드 <a href="../index.html#run">(내려받기)</a></span>
+  </div>
+</header>
+
+<main>
+<section id="ws-id">
+  <div class="ws-id">
+    <div><label for="id-name">이름</label><input id="id-name" type="text" data-k="id-name"></div>
+    <div><label for="id-no">학번</label><input id="id-no" type="text" data-k="id-no"></div>
+    <div><label for="id-group">모둠 / 짝</label><input id="id-group" type="text" data-k="id-group"></div>
+    <div><label for="id-date">날짜</label><input id="id-date" type="text" data-k="id-date"></div>
+  </div>
+</section>
+
+<section id="goals">
+  <h2>오늘의 학습목표</h2>
+  <ul>
+    <li><b>목표 1-a</b>: 한 클래스의 메서드들을 "누가 바꾸라고 요청하는가"를 기준으로 분류하고, 따로 떼어 낼 덩어리를 찾을 수 있다.</li>
+    <li><b>목표 1-b</b>: if-elif 코드에 새 요구를 넣을 때 고치는 기존 코드의 양을 재 보고, 추상 클래스(ABC)를 이용해 <b>기존 코드를 고치지 않고 추가만으로</b> 새 요구를 구현할 수 있다.</li>
+    <li><b>목표 1-c</b>: 처음 보는 코드에서 변경에 약한 지점을 찾아 근거를 들어 설명할 수 있다.</li>
+  </ul>
+</section>
+
+<section id="lens">
+  <h2>렌즈와 안내 질문</h2>
+  <div class="lens">
+    <b>렌즈: 변경(Change)</b> — "요구가 바뀔 때 코드의 <b>어디가</b>, <b>몇 군데가</b>, <b>누구 때문에</b> 바뀌는가?"
+  </div>
+  <p>오늘 활동을 하면서 아래 질문들의 답을 조금씩 모아 갑니다. 지금 답할 필요는 없습니다.</p>
+  <ul>
+    <li><span class="q-level fact">사실</span><code>CafeOrder</code> 클래스는 몇 가지 서로 다른 일을 하는가? 텀블러 할인이 생기면 몇 개의 메서드를 고쳐야 하는가?</li>
+    <li><span class="q-level fact">사실</span>생일 쿠폰을 if-elif 방식으로 추가할 때 기존 코드를 몇 줄 고쳤는가? 클래스 추가 방식에서는?</li>
+    <li><span class="q-level concept">개념</span>"변경 이유가 다르다"는 것은 무슨 뜻인가? 메서드가 여러 개인 것과 맡은 일이 여러 개인 것은 같은가?</li>
+    <li><span class="q-level concept">개념</span>기존 코드를 고치지 않고 새 기능을 붙일 수 있게 만드는 구조에는 어떤 공통점이 있는가?</li>
+    <li><span class="q-level debate">논쟁</span>모든 if문을 클래스로 바꾸는 것이 항상 좋은가? 언제 if-elif가 더 나은가?</li>
+  </ul>
+  <div class="situation">
+    <b>상황.</b> 동네 카페 "한입카페"에는 주문 프로그램이 있습니다. 사장님은 가격과 할인을, 매장 디자이너는 영수증 모양을, 외주 개발자는 저장 형식을 맡고 있고, 세 사람이 번갈아 가며 프로그램을 고쳐 달라고 요청합니다. 그리고 사장님은 매달 새 할인 행사를 만듭니다.
+  </div>
+</section>
+
+<!-- ===================== 조사 ===================== -->
+<h2>1단계. 연결과 조사</h2>
+
+<section class="activity" data-type="predict" id="a1-1">
+  <h3>활동 1-1. 어디를 고치게 될까? 먼저 예측하기</h3>
+  <div class="tags"><span class="t-type">예측하기</span><span>7분</span><span>개인</span><span>목표 1-a</span></div>
+
+  <p><b>(1) 워밍업 (2분).</b> 사전 읽기(00장)에서 본 코드입니다.</p>
+<pre><code>class Shape(ABC):
+    @abstractmethod
+    def area(self) -&gt; float: ...</code></pre>
+  <p><span class="q-level fact">사실</span><code>Shape</code>를 상속한 <code>Circle</code> 클래스가 <code>area</code>를 만들지 않으면, <code>Circle()</code>을 실행할 때 어떤 일이 일어날까요? 한 줄로 쓰세요.</p>
+  <textarea data-k="1-1-warmup" placeholder="한 줄로"></textarea>
+
+  <p><b>(2) 사전 생각.</b> 지금 내 생각을 솔직하게 적어 두세요. 수업 끝(활동 1-8)에 다시 봅니다.</p>
+  <p>"요구가 자주 바뀌는 프로그램에서 좋은 코드란 ___________ 코드이다."</p>
+  <textarea data-k="1-1-prior" placeholder="빈칸을 채워 한 문장으로"></textarea>
+
+  <p><b>(3) 코드 읽기.</b> <code>code/s1_cafe_order.py</code>를 열거나 아래 코드를 읽습니다. <b>아직 실행하거나 고치지 마세요.</b></p>
+<pre><code>class CafeOrder:
+    """한입카페의 주문 한 건."""
+
+    def __init__(self, customer: str) -&gt; None:
+        self.customer = customer
+        self.items: list[tuple[str, int, int]] = []  # (메뉴 이름, 단가, 수량)
+
+    def add_item(self, name: str, price: int, qty: int = 1) -&gt; None:
+        """메뉴를 주문에 담는다."""
+        self.items.append((name, price, qty))
+
+    def total(self) -&gt; int:
+        """주문 합계(원)를 계산한다."""
+        return sum(price * qty for _, price, qty in self.items)
+
+    def receipt_text(self) -&gt; str:
+        """영수증에 찍을 글자를 만든다."""
+        lines = ["===== 한입카페 =====", f"손님: {self.customer}"]
+        for name, price, qty in self.items:
+            lines.append(f"  {name} x{qty}  {price * qty:,}원")
+        lines.append(f"  합계: {self.total():,}원")
+        lines.append("====================")
+        return "\n".join(lines)
+
+    def print_receipt(self) -&gt; None:
+        """영수증을 화면(프린터)으로 내보낸다."""
+        print(self.receipt_text())
+
+    def to_json(self) -&gt; str:
+        """주문을 저장용 글자(JSON)로 바꾼다."""
+        data = {"customer": self.customer, "items": self.items, "total": self.total()}
+        return json.dumps(data, ensure_ascii=False)
+
+    def save(self, folder: Path) -&gt; Path:
+        """주문을 파일로 저장하고, 저장한 파일 경로를 돌려준다."""
+        path = folder / f"order_{self.customer}.json"
+        path.write_text(self.to_json(), encoding="utf-8")
+        return path
+
+    @classmethod
+    def load(cls, path: Path) -&gt; "CafeOrder":
+        """저장된 파일을 읽어 주문을 다시 만든다."""
+        data = json.loads(path.read_text(encoding="utf-8"))
+        order = cls(data["customer"])
+        for name, price, qty in data["items"]:
+            order.add_item(name, price, qty)
+        return order</code></pre>
+
+  <p><b>(4) 예측.</b> 아래 세 장의 변경 요청이 들어왔습니다. 요청마다 "고쳐야 할 메서드"를 예측해 적으세요.</p>
+  <table>
+    <thead><tr><th>요청</th><th>요청한 사람</th><th>고쳐야 할 메서드(예측)</th><th>몇 개?</th><th>확신</th></tr></thead>
+    <tbody>
+      <tr><td><b>가</b>. 텀블러를 가져온 손님은 합계에서 300원 할인</td><td>사장님</td>
+        <td><input type="text" data-k="1-1-p-a-methods"></td><td><input type="text" data-k="1-1-p-a-n" style="min-width:50px"></td>
+        <td><select data-k="1-1-p-a-conf"><option value=""></option><option>확실</option><option>반반</option><option>모르겠음</option></select></td></tr>
+      <tr><td><b>나</b>. 영수증 맨 아래에 와이파이 비밀번호 추가</td><td>매장 디자이너</td>
+        <td><input type="text" data-k="1-1-p-b-methods"></td><td><input type="text" data-k="1-1-p-b-n" style="min-width:50px"></td>
+        <td><select data-k="1-1-p-b-conf"><option value=""></option><option>확실</option><option>반반</option><option>모르겠음</option></select></td></tr>
+      <tr><td><b>다</b>. 저장 파일을 JSON 대신 CSV로 (다시 불러오기도 돼야 함)</td><td>외주 개발자</td>
+        <td><input type="text" data-k="1-1-p-c-methods"></td><td><input type="text" data-k="1-1-p-c-n" style="min-width:50px"></td>
+        <td><select data-k="1-1-p-c-conf"><option value=""></option><option>확실</option><option>반반</option><option>모르겠음</option></select></td></tr>
+    </tbody>
+  </table>
+  <p><span class="q-level fact">사실</span>이 클래스는 몇 가지 서로 다른 일을 하는 것 같나요? 일의 이름을 붙여 보세요.</p>
+  <textarea data-k="1-1-jobs" placeholder="예: ○○하는 일, △△하는 일 ..."></textarea>
+</section>
+
+<section class="activity" data-type="observe" id="a1-2">
+  <h3>활동 1-2. 직접 고치고, 고친 자리를 표시하기</h3>
+  <div class="tags"><span class="t-type">실행·관찰</span><span>7분</span><span>짝</span><span>목표 1-a</span></div>
+  <ol>
+    <li>터미널에서 <code>python3 s1_cafe_order.py</code>를 실행해 "변경 요청 반영 점검" 결과를 확인합니다.</li>
+    <li>짝과 번갈아 키보드를 잡고 요청 <b>가 → 나 → 다</b> 순서로 코드를 고칩니다. 고치거나 새로 쓴 줄 끝에 <code># 가</code>, <code># 나</code>, <code># 다</code>를 붙입니다.</li>
+    <li>요청 하나를 반영할 때마다 다시 실행합니다. 세 요청이 모두 "반영됨"이 되면 끝입니다.</li>
+  </ol>
+  <details class="hint"><summary>힌트 1단계 (방향)</summary>
+    <p>요청 가: 주문을 만들 때 텀블러 여부를 받아 <b>기억해 두어야</b> 합계를 계산할 때 쓸 수 있습니다. 요청 다: 파이썬 표준 라이브러리 <code>csv</code> 모듈을 써도 되고, 쉼표로 직접 이어 붙여도 됩니다.</p>
+  </details>
+  <details class="hint"><summary>힌트 2단계 (구조)</summary>
+    <p>요청 다는 "글자로 바꾸기 → 파일에 쓰기 → 파일을 읽어 되돌리기"의 세 단계가 서로 맞아야 합니다. 세 단계가 어느 메서드에 있는지 먼저 찾아보세요.</p>
+  </details>
+
+  <p><b>관찰 기록표.</b> 다 고친 뒤 코드의 기호를 세어 채웁니다.</p>
+  <table>
+    <thead><tr><th>요청</th><th>실제로 고친 메서드</th><th>고치거나 추가한 줄 수</th><th>예측과 같았나?</th><th>예측과 다른 점, 의외였던 점</th></tr></thead>
+    <tbody>
+      <tr><td><b>가</b></td><td><input type="text" data-k="1-2-o-a-methods"></td><td><input type="text" data-k="1-2-o-a-lines" style="min-width:50px"></td>
+        <td><select data-k="1-2-o-a-same"><option value=""></option><option>같음</option><option>일부 다름</option><option>많이 다름</option></select></td><td><input type="text" data-k="1-2-o-a-note"></td></tr>
+      <tr><td><b>나</b></td><td><input type="text" data-k="1-2-o-b-methods"></td><td><input type="text" data-k="1-2-o-b-lines" style="min-width:50px"></td>
+        <td><select data-k="1-2-o-b-same"><option value=""></option><option>같음</option><option>일부 다름</option><option>많이 다름</option></select></td><td><input type="text" data-k="1-2-o-b-note"></td></tr>
+      <tr><td><b>다</b></td><td><input type="text" data-k="1-2-o-c-methods"></td><td><input type="text" data-k="1-2-o-c-lines" style="min-width:50px"></td>
+        <td><select data-k="1-2-o-c-same"><option value=""></option><option>같음</option><option>일부 다름</option><option>많이 다름</option></select></td><td><input type="text" data-k="1-2-o-c-note"></td></tr>
+    </tbody>
+  </table>
+
+  <p><span class="q-level fact">사실</span>요청 가를 반영한 뒤, 영수증 출력이나 저장 파일 내용도 함께 달라졌나요? 무엇이 왜 달라졌는지 쓰세요.</p>
+  <textarea data-k="1-2-ripple"></textarea>
+  <p><span class="q-level fact">사실</span><code>CafeOrder</code> 한 클래스는 <b>몇 명</b>의 요청을 받았나요? <input type="text" data-k="1-2-people" style="min-width:60px"> 명</p>
+  <p><span class="q-level concept">개념</span>여러 사람이 같은 클래스를 고치러 온다면 어떤 문제가 생길 수 있을까요? (예: 디자이너가 영수증을 고치다가 …)</p>
+  <textarea data-k="1-2-problem"></textarea>
+</section>
+
+<!-- ===================== 조직 ===================== -->
+<h2>2단계. 조직: 패턴 찾기</h2>
+
+<section class="activity" data-type="sort" id="a1-3">
+  <h3>활동 1-3. 메서드 카드 분류하기</h3>
+  <div class="tags"><span class="t-type">사례 분류</span><span>6분</span><span>모둠</span><span>목표 1-a</span></div>
+  <p>요청 가를 반영하면서 <code>apply_tumbler</code>라는 메서드를 따로 만들었다고 생각해 봅시다. 아래 메서드 카드 8장을 <b>"이 메서드를 바꾸라고 요청하는 사람"</b>을 기준으로 나눕니다. 모둠원끼리 의견이 갈리면 그 이유를 적어 둡니다.</p>
+  <div class="pool">
+    <span class="card"><code>add_item</code></span><span class="card"><code>total</code></span><span class="card"><code>apply_tumbler</code></span><span class="card"><code>receipt_text</code></span>
+    <span class="card"><code>print_receipt</code></span><span class="card"><code>to_json</code></span><span class="card"><code>save</code></span><span class="card"><code>load</code></span>
+  </div>
+  <table class="sort-table">
+    <thead><tr><th>카드</th><th>바꾸라고 요청하는 사람</th></tr></thead>
+    <tbody>
+      <tr><td><code>add_item</code></td><td><select data-k="1-3-add_item"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+      <tr><td><code>total</code></td><td><select data-k="1-3-total"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+      <tr><td><code>apply_tumbler</code></td><td><select data-k="1-3-apply_tumbler"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+      <tr><td><code>receipt_text</code></td><td><select data-k="1-3-receipt_text"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+      <tr><td><code>print_receipt</code></td><td><select data-k="1-3-print_receipt"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+      <tr><td><code>to_json</code></td><td><select data-k="1-3-to_json"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+      <tr><td><code>save</code></td><td><select data-k="1-3-save"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+      <tr><td><code>load</code></td><td><select data-k="1-3-load"><option value=""></option><option>사장님(가격·할인)</option><option>매장 디자이너(영수증)</option><option>외주 개발자(저장)</option><option>의견이 갈림</option></select></td></tr>
+    </tbody>
+  </table>
+  <p>의견이 갈린 카드와 그 이유:</p>
+  <textarea data-k="1-3-split"></textarea>
+  <p><b>새 클래스 이름 붙이기.</b> 같은 사람에게 묶인 카드들을 한 클래스로 모은다면 이름을 무엇으로 할까요?</p>
+  <table>
+    <thead><tr><th>요청하는 사람</th><th>새 클래스 이름</th><th>들어갈 메서드</th></tr></thead>
+    <tbody>
+      <tr><td>사장님</td><td><input type="text" data-k="1-3-cls-owner"></td><td><input type="text" data-k="1-3-cls-owner-m"></td></tr>
+      <tr><td>매장 디자이너</td><td><input type="text" data-k="1-3-cls-designer"></td><td><input type="text" data-k="1-3-cls-designer-m"></td></tr>
+      <tr><td>외주 개발자</td><td><input type="text" data-k="1-3-cls-dev"></td><td><input type="text" data-k="1-3-cls-dev-m"></td></tr>
+    </tbody>
+  </table>
+  <p><b>오개념 카드 반박.</b> 옆 모둠 친구가 이렇게 말했습니다.</p>
+  <div class="situation">"클래스는 한 가지 일만 해야 하니까, 메서드 8개를 클래스 8개로 하나씩 나누면 가장 좋은 설계야."</div>
+  <p><span class="q-level concept">개념</span>오늘 관찰한 사실(활동 1-2)을 근거로 한 줄 반박을 쓰세요. 메서드가 여러 개인 것과 맡은 일이 여러 개인 것은 같은가요?</p>
+  <textarea data-k="1-3-rebut"></textarea>
+</section>
+
+<!-- ===================== 조사 2 ===================== -->
+<h2>3단계. 조사 2: 새 요구가 계속 들어온다면</h2>
+
+<section class="activity" data-type="code" id="a1-4">
+  <h3>활동 1-4. 생일 할인, 두 가지 방식으로 넣어 보기</h3>
+  <div class="tags"><span class="t-type">코드 수정</span><span>9분</span><span>개인</span><span>목표 1-b</span></div>
+  <div class="situation">사장님: "이번 달에는 <b>생일인 손님 15% 할인</b>을 해 주세요. 다음 달에도 새 할인을 또 만들 거예요." (20,000원 → 17,000원)</div>
+  <ol>
+    <li><code>python3 s1_discount.py</code>를 실행해 현재 점검 결과를 확인합니다. 아직 "생일 할인이 없다"는 안내가 나오는 것이 정상입니다.</li>
+    <li><b>방식 ①</b>: <code># TODO(학생) ①</code> 자리, 즉 <code>PriceCalculator.final_price</code>의 if-elif에 <code>"birthday"</code>를 넣습니다.</li>
+    <li><b>방식 ②</b>: <code># TODO(학생) ②</code> 자리에 <code>Discount</code>를 상속한 <code>BirthdayDiscount</code> 클래스를 새로 만듭니다. <code>Discount</code>, <code>MemberDiscount</code>, <code>checkout</code>은 고치지 않고 해결해 보세요.</li>
+    <li>고친 줄 끝에 <code># ①</code>, <code># ②</code>를 붙이고, 점검이 모두 "통과"가 될 때까지 실행합니다.</li>
+  </ol>
+  <details class="hint"><summary>힌트 1단계 (방향)</summary>
+    <p>방식 ②는 바로 위의 <code>MemberDiscount</code>와 생김새가 거의 같습니다. 무엇이 같고 무엇만 달라야 할까요?</p>
+  </details>
+  <details class="hint"><summary>힌트 2단계 (구조)</summary>
+    <p><code>class 새이름(Discount):</code> 아래에 <code>def apply(self, price: int) -&gt; int:</code> 를 두고, 그 안에서 할인된 가격을 돌려줍니다.</p>
+  </details>
+
+  <p><b>완성한 방식 ② 코드</b>를 옮겨 적으세요(인쇄용).</p>
+  <textarea class="code" data-k="1-4-code"></textarea>
+
+  <p><b>비교표.</b> 줄 수는 이렇게 셉니다. <b>고친 줄</b> = 이미 있던 클래스·함수 안에서 기존 줄을 바꾸거나 그 사이에 끼워 넣은 줄 수, <b>추가한 줄</b> = 기존 클래스·함수 밖에 완전히 새로 쓴 줄 수(빈 줄·주석 제외).</p>
+  <table>
+    <thead><tr><th></th><th>방식 ① if-elif에 추가</th><th>방식 ② 새 클래스 추가</th></tr></thead>
+    <tbody>
+      <tr><td>고친 줄 수 (기존 줄을 바꾸거나 끼워 넣은 줄 수)</td><td><input type="text" data-k="1-4-m1-edit"></td><td><input type="text" data-k="1-4-m2-edit"></td></tr>
+      <tr><td>추가한 줄 수 (완전히 새로 쓴 줄 수)</td><td><input type="text" data-k="1-4-m1-add"></td><td><input type="text" data-k="1-4-m2-add"></td></tr>
+      <tr><td>열어서 고친 기존 클래스/함수 이름</td><td><input type="text" data-k="1-4-m1-which"></td><td><input type="text" data-k="1-4-m2-which"></td></tr>
+      <tr><td>회원·VIP·쿠폰 할인을 다시 확인해야 할까?</td>
+        <td><select data-k="1-4-m1-retest"><option value=""></option><option>예</option><option>아니오</option><option>잘 모르겠음</option></select></td>
+        <td><select data-k="1-4-m2-retest"><option value=""></option><option>예</option><option>아니오</option><option>잘 모르겠음</option></select></td></tr>
+    </tbody>
+  </table>
+  <p><span class="q-level fact">사실</span>다음 달에 "첫 방문 1,000원 할인"이 또 생긴다면, 방식 ①과 ②에서 각각 무엇을 하게 되나요?</p>
+  <textarea data-k="1-4-next"></textarea>
+  <p><span class="q-level concept">개념</span>방식 ②에서도 실제 결제 화면이 생일 할인을 쓰려면 어딘가에 <code>checkout(price, BirthdayDiscount())</code> 같은 줄이 생겨야 합니다. 이 한 줄은 방식 ①의 if-elif 수정과 같은 종류의 "수정"일까요, 다른 종류일까요? 이유와 함께 쓰세요.</p>
+  <textarea data-k="1-4-wiring"></textarea>
+</section>
+
+<section class="activity" data-type="pair" id="a1-5">
+  <h3>활동 1-5. 짝 코드 리뷰</h3>
+  <div class="tags"><span class="t-type">짝 코드 리뷰</span><span>5분</span><span>짝</span><span>목표 1-b</span></div>
+  <p>짝과 노트북을 바꿔 짝의 <code>s1_discount.py</code>(방식 ②)를 점검합니다. 판정마다 근거가 되는 줄이나 실행 결과를 적습니다.</p>
+  <table>
+    <thead><tr><th>점검 항목</th><th>판정</th><th>근거(줄·실행 결과)</th></tr></thead>
+    <tbody>
+      <tr><td>1. <code>BirthdayDiscount</code>를 넣으면서 <code>Discount</code>, <code>MemberDiscount</code>, <code>checkout</code>을 한 줄도 고치지 않았다.</td>
+        <td><label><input type="radio" name="r1" data-k="1-5-c1-y"> 예</label> <label><input type="radio" name="r1" data-k="1-5-c1-n"> 아니오</label></td><td><input type="text" data-k="1-5-c1-why"></td></tr>
+      <tr><td>2. 새 할인을 넣은 뒤에도 [기존 할인] 점검이 모두 통과한다.</td>
+        <td><label><input type="radio" name="r2" data-k="1-5-c2-y"> 예</label> <label><input type="radio" name="r2" data-k="1-5-c2-n"> 아니오</label></td><td><input type="text" data-k="1-5-c2-why"></td></tr>
+      <tr><td>3. <code>checkout</code> 안에 "이 할인이 어떤 클래스인지" 묻는 분기(<code>if isinstance(...)</code> 등)가 없다.</td>
+        <td><label><input type="radio" name="r3" data-k="1-5-c3-y"> 예</label> <label><input type="radio" name="r3" data-k="1-5-c3-n"> 아니오</label></td><td><input type="text" data-k="1-5-c3-why"></td></tr>
+      <tr><td>4. 클래스 이름만 보고도 어떤 할인인지 알 수 있다.</td>
+        <td><label><input type="radio" name="r4" data-k="1-5-c4-y"> 예</label> <label><input type="radio" name="r4" data-k="1-5-c4-n"> 아니오</label></td><td><input type="text" data-k="1-5-c4-why"></td></tr>
+    </tbody>
+  </table>
+  <p>짝에게 줄 피드백: <b>잘한 점 1개</b>와 <b>고치면 좋을 점 1개</b>(근거 포함).</p>
+  <textarea data-k="1-5-feedback"></textarea>
+  <p>내가 받은 피드백과, 그것을 보고 고친(또는 고치지 않기로 한) 이유:</p>
+  <textarea data-k="1-5-received"></textarea>
+</section>
+
+<!-- ===================== 일반화 ===================== -->
+<h2>4단계. 일반화: 규칙을 우리 말로</h2>
+
+<section class="activity" data-type="generalize" id="a1-6">
+  <h3>활동 1-6. "변경"이 들어간 원칙 문장 만들기</h3>
+  <div class="tags"><span class="t-type">자기 말로 일반화</span><span>6분</span><span>개인 → 모둠</span><span>목표 1-a, 1-b</span></div>
+  <p>활동 1-2(카페 주문서)와 활동 1-4(할인 계산기)에서 관찰한 사실을 다시 봅니다. 두 관찰을 <b>모두</b> 설명할 수 있는 규칙을, <b>"변경"</b>이라는 단어를 넣어 한두 문장으로 씁니다. 카페·할인 같은 특정 이름 없이 다른 프로그램에도 통하게 써 보세요.</p>
+  <p><span class="q-level concept">개념</span>두 관찰에서 찾은 공통점 메모(키워드만):</p>
+  <textarea data-k="1-6-notes" placeholder="예: 누가 요청했는지, 몇 군데를 고쳤는지, 기존 코드를 열었는지 ..."></textarea>
+  <p><b>(1) 내 원칙 문장</b></p>
+  <textarea data-k="1-6-mine"></textarea>
+  <p><b>(2) 내 문장 스스로 점검</b></p>
+  <label class="check"><input type="checkbox" data-k="1-6-chk1"> "변경"이라는 단어가 들어 있다.</label>
+  <label class="check"><input type="checkbox" data-k="1-6-chk2"> 카페·할인 같은 특정 상황 이름 없이도 뜻이 통한다.</label>
+  <label class="check"><input type="checkbox" data-k="1-6-chk3"> 활동 1-2의 관찰과 활동 1-4의 관찰을 둘 다 설명한다.</label>
+  <label class="check"><input type="checkbox" data-k="1-6-chk4"> "그렇게 하면 무엇이 좋아지는지(결과)"가 들어 있다.</label>
+  <p><b>(3) 모둠 문장</b> — 모둠원 문장에서 좋은 부분을 모아 하나로 합칩니다.</p>
+  <textarea data-k="1-6-group"></textarea>
+</section>
+
+<section id="definitions">
+  <h3>정의 확인 구역 (모둠 문장을 완성한 뒤에 읽으세요)</h3>
+  <p>아래는 소프트웨어 공학에서 쓰는 이름과 정의입니다. 모둠 문장을 완성한 뒤에 펼쳐서 우리 모둠 문장과 비교해 봅니다.</p>
+  <details class="defs">
+    <summary><b>개념 확인 펼치기</b> (일반화 문장을 쓴 뒤 열어 보세요)</summary>
+  <aside class="box concept">
+    <h4>📦 개념: 책임 = 변경 이유</h4>
+    <ul>
+      <li><b>정의</b>: 설계에서 '책임'은 하는 일의 개수가 아니라, "이 코드를 바꾸라고 요구할 수 있는 이유(그 요구를 하는 사람·부서)"이다.</li>
+      <li><b>예</b>: 가격 규칙(사장님), 영수증 모양(디자이너), 저장 형식(개발자) → 변경 이유 3개 = 책임 3개. 메서드가 여러 개여도 변경 이유가 하나면 책임은 하나다.</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>📦 개념: SRP 단일 책임 원칙 (Single Responsibility Principle)</h4>
+    <ul>
+      <li><b>정의</b>: 하나의 클래스(모듈)는 변경 이유가 하나뿐이어야 한다.</li>
+      <li><b>효과</b>: 한 요구가 한 곳만 바꾸게 되어, 다른 사람의 기능을 실수로 망가뜨릴 위험과 함께 다시 테스트할 범위가 줄어든다.</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>📦 개념: OCP 개방-폐쇄 원칙 (Open-Closed Principle)</h4>
+    <ul>
+      <li><b>정의</b>: 소프트웨어 요소는 확장에는 열려 있고, 수정에는 닫혀 있어야 한다. 즉 새 요구를 기존 코드 수정이 아니라 새 코드 추가로 받아들일 수 있어야 한다.</li>
+      <li><b>범위</b>: 버그 수정이나 새 객체를 만들어 넘기는 조립 코드까지 금지하는 것은 아니다. 반복해서 바뀌는 부분에 대해 기존 코드를 닫아 두는 것이다.</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>📦 개념: 확장점</h4>
+    <ul>
+      <li><b>정의</b>: 새 기능을 끼워 넣을 수 있도록 미리 정해 둔 추상(예: <code>Discount</code> ABC의 <code>apply</code>). 사용하는 쪽(<code>checkout</code>)은 이 추상에만 기대고 구체 클래스가 무엇인지 묻지 않는다.</li>
+    </ul>
+  </aside>
+  </details>
+  <p><span class="q-level concept">개념</span>우리 모둠 문장과 위 정의의 <b>같은 점 1개, 다른 점 1개</b>:</p>
+  <textarea data-k="1-6-compare"></textarea>
+</section>
+
+<!-- ===================== 전이·성찰 ===================== -->
+<h2>5단계. 전이와 성찰</h2>
+
+<section class="activity" data-type="transfer" id="a1-7">
+  <h3>활동 1-7. 처음 보는 코드: 택배 요금 프로그램</h3>
+  <div class="tags"><span class="t-type">낯선 도메인 전이</span><span>5분</span><span>개인</span><span>목표 1-c</span></div>
+  <div class="situation">학교 앞 문구점의 택배 접수 프로그램입니다. 문구점 주인은 요금표를 자주 바꾸고 <b>내년에 새 택배사도 늘릴 예정</b>입니다. 송장 모양은 택배사 직원이, 접수 기록 저장 방식은 학교 정보 선생님이 관리합니다.</div>
+  <p><code>python3 s1_transfer_parcel.py</code>를 실행해 결과를 본 뒤, <b>코드는 고치지 말고</b> 읽습니다. 왼쪽 숫자는 파일의 줄 번호, <code># [A]</code>~<code># [F]</code>는 위치 표시입니다.</p>
+<pre><code>25  class ParcelService:  # [A]
+26      """택배 접수 한 건을 처리한다."""
+27  
+28      def __init__(self, sender: str, receiver: str, carrier: str, weight_kg: float) -&gt; None:
+29          self.sender = sender
+30          self.receiver = receiver
+31          self.carrier = carrier
+32          self.weight_kg = weight_kg
+33  
+34      def fee(self) -&gt; int:  # [B]
+35          """택배 요금(원)."""
+36          if self.carrier == "fast":
+37              return 4000 + int(self.weight_kg * 500)
+38          elif self.carrier == "cheap":
+39              return 2500 + int(self.weight_kg * 300)
+40          elif self.carrier == "island":  # [C]
+41              return 6000 + int(self.weight_kg * 800)
+42          else:
+43              raise ValueError(f"모르는 택배사: {self.carrier}")
+44  
+45      def label_text(self) -&gt; str:  # [D]
+46          """송장에 찍을 글자."""
+47          if self.carrier == "fast":  # [E]
+48              name = "빠른택배"
+49          elif self.carrier == "cheap":
+50              name = "알뜰택배"
+51          else:
+52              name = "섬택배"
+53          return (
+54              f"[{name} 송장]\n"
+55              f"  보내는 사람: {self.sender}\n"
+56              f"  받는 사람: {self.receiver}\n"
+57              f"  무게: {self.weight_kg}kg  요금: {self.fee():,}원"
+58          )
+59  
+60      def save_log(self, folder: Path) -&gt; Path:  # [F]
+61          """접수 기록을 파일 끝에 한 줄 덧붙인다."""
+62          path = folder / "parcel_log.txt"  # Path의 / 는 경로를 이어 붙인다
+63          with path.open("a", encoding="utf-8") as f:
+64              f.write(f"{self.sender},{self.receiver},{self.carrier},{self.weight_kg},{self.fee()}\n")
+65          return path
+66  
+67</code></pre>
+  <table>
+    <thead><tr><th></th><th>위치 표시</th><th>줄 번호</th><th>근거: 어떤 변경 요청이 오면(누가), 어디가 바뀌는가?</th></tr></thead>
+    <tbody>
+      <tr><td><b>위반 1 (SRP)</b>. 한 클래스가 여러 사람의 요청을 받는 곳</td>
+        <td><select data-k="1-7-v1-mark"><option value=""></option><option>[A]</option><option>[B]</option><option>[C]</option><option>[D]</option><option>[E]</option><option>[F]</option></select></td>
+        <td><input type="text" data-k="1-7-v1-line" style="min-width:60px"></td><td><textarea data-k="1-7-v1-why"></textarea></td></tr>
+      <tr><td><b>위반 2 (OCP)</b>. 새 요구가 올 때마다 기존 코드를 열어 고쳐야 하는 곳</td>
+        <td><select data-k="1-7-v2-mark"><option value=""></option><option>[A]</option><option>[B]</option><option>[C]</option><option>[D]</option><option>[E]</option><option>[F]</option></select></td>
+        <td><input type="text" data-k="1-7-v2-line" style="min-width:60px"></td><td><textarea data-k="1-7-v2-why"></textarea></td></tr>
+    </tbody>
+  </table>
+  <p><span class="q-level fact">사실</span>(도전) "번개택배"가 새로 생기면 이 파일에서 고쳐야 할 곳을 모두 찾아 위치 표시로 적어 보세요.</p>
+  <input type="text" data-k="1-7-challenge">
+  <p>(선택) 이 코드를 어떻게 나누면 좋을지 클래스 이름만으로 스케치:</p>
+  <textarea data-k="1-7-sketch"></textarea>
+</section>
+
+<section class="activity" data-type="reflect" id="a1-8">
+  <h3>활동 1-8. 퇴장권과 성찰</h3>
+  <div class="tags"><span class="t-type">퇴장권·자기 점검</span><span>4분</span><span>개인</span><span>목표 1-a, 1-b, 1-c</span></div>
+
+  <p><b>1.</b> (목표 1-a) 학급 점수판 클래스 <code>ScoreBoard</code>에 메서드 4개 <code>add_score</code>, <code>rank</code>, <code>to_html</code>, <code>save_csv</code>가 있습니다.</p>
+  <table>
+    <thead><tr><th>메서드</th><th>담임 선생님이 순위 규칙을 바꾸면 바뀐다</th><th>웹 디자이너가 요청하면 바뀐다</th></tr></thead>
+    <tbody>
+      <tr><td><code>add_score</code></td><td><input type="checkbox" data-k="1-8-q1-add-t"></td><td><input type="checkbox" data-k="1-8-q1-add-w"></td></tr>
+      <tr><td><code>rank</code></td><td><input type="checkbox" data-k="1-8-q1-rank-t"></td><td><input type="checkbox" data-k="1-8-q1-rank-w"></td></tr>
+      <tr><td><code>to_html</code></td><td><input type="checkbox" data-k="1-8-q1-html-t"></td><td><input type="checkbox" data-k="1-8-q1-html-w"></td></tr>
+      <tr><td><code>save_csv</code></td><td><input type="checkbox" data-k="1-8-q1-csv-t"></td><td><input type="checkbox" data-k="1-8-q1-csv-w"></td></tr>
+    </tbody>
+  </table>
+  <p>이 클래스는 몇 개의 클래스로 나누는 것이 좋을까요? <input type="text" data-k="1-8-q1-n" style="min-width:60px"> 개, 이유:</p>
+  <input type="text" data-k="1-8-q1-why" style="width:100%">
+
+  <p><b>2.</b> (목표 1-b) "새 할인을 추가할 때 기존 클래스를 고치지 않았다"가 왜 좋은지 <b>테스트</b>라는 단어를 넣어 한 문장으로 쓰세요.</p>
+  <textarea data-k="1-8-q2"></textarea>
+
+  <p><b>3.</b> (목표 1-c) "할인이 한 번도 바뀐 적 없고 2종뿐인 매점 계산기"에도 <code>Discount</code> ABC를 만들어야 할까요?</p>
+  <label><input type="radio" name="q3" data-k="1-8-q3-y"> 예</label>
+  <label><input type="radio" name="q3" data-k="1-8-q3-n"> 아니오</label>
+  <textarea data-k="1-8-q3-why" placeholder="이유"></textarea>
+
+  <p><b>4.</b> <span class="q-level debate">논쟁</span>"모든 if문은 클래스로 바꾸는 것이 좋다." 이 말에 대한 내 입장을 한 줄로 쓰세요(찬성/반대/조건부 + 근거).</p>
+  <textarea data-k="1-8-debate"></textarea>
+
+  <p><b>5.</b> 활동 1-1의 사전 생각을 다시 읽어 보세요. 지금은 어떻게 고쳐 쓰고 싶나요? 무엇이 바뀌었나요?</p>
+  <textarea data-k="1-8-prior-again"></textarea>
+
+  <p><b>6.</b> (자기 점검) 오늘 만든 일반화 문장을 친구에게 예를 들어 설명할 수 있다.</p>
+  <div class="scale">
+    <label><input type="radio" name="self" data-k="1-8-self-1"> 1 아직 어렵다</label>
+    <label><input type="radio" name="self" data-k="1-8-self-2"> 2 예를 보면 안다</label>
+    <label><input type="radio" name="self" data-k="1-8-self-3"> 3 혼자 설명할 수 있다</label>
+    <label><input type="radio" name="self" data-k="1-8-self-4"> 4 새 예를 만들어 설명할 수 있다</label>
+  </div>
+  <p>가장 헷갈렸던 점 또는 더 알고 싶은 점:</p>
+  <textarea data-k="1-8-question"></textarea>
+</section>
+</main>
+
+<nav class="pager">
+  <a href="../index.html">← 목차</a>
+  <a href="session_2.html">2차시: 약속(Contract) →</a>
+</nav>
+</body>
+</html>

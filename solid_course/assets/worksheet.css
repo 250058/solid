@@ -1,0 +1,52 @@
+/* 개념기반탐구학습지 전용 스타일 (style.css 위에 덧입힌다) */
+.ws-meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px;font-size:14px}
+.ws-meta span{padding:3px 10px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+.ws-id{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:12px 0}
+.ws-id label{font-size:13px;color:var(--muted);display:block}
+.ws-id input{width:100%;padding:6px 8px;border:0;border-bottom:2px solid var(--line);background:transparent;color:var(--fg);font:inherit}
+.lens{background:var(--concept);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;margin:16px 0}
+.activity{margin:28px 0;padding:14px 18px 18px;border:2px solid var(--line);border-radius:12px;background:var(--bg);break-inside:avoid}
+.activity>h3{margin:0 0 4px;font-size:18px}
+.activity .tags{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px;font-size:12px}
+.activity .tags span{padding:2px 8px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.activity .tags .t-type{background:var(--accent);color:#fff;border-color:var(--accent)}
+.activity[data-type=predict]{border-left:6px solid #e0a800}
+.activity[data-type=observe],.activity[data-type=code]{border-left:6px solid var(--goodb)}
+.activity[data-type=sort],.activity[data-type=pair]{border-left:6px solid #8a5cf6}
+.activity[data-type=debate]{border-left:6px solid var(--badb)}
+.activity[data-type=generalize]{border-left:6px solid var(--accent)}
+.activity[data-type=transfer],.activity[data-type=reflect]{border-left:6px solid #14a3b8}
+.q-level{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:6px;color:#fff;vertical-align:middle}
+.q-level.fact{background:#6b7a99}.q-level.concept{background:var(--accent)}.q-level.debate{background:var(--badb)}
+.activity textarea{width:100%;min-height:84px;margin:6px 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);font:inherit;line-height:1.6;resize:vertical}
+.activity textarea.tall{min-height:150px}
+.activity textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;min-height:170px;white-space:pre}
+.activity input[type=text]{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);font:inherit;min-width:140px}
+.activity select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);font:inherit}
+.activity textarea,.activity input,.activity select{box-sizing:border-box;max-width:100%}
+/* 표 안 입력칸: 기본 글자 수 너비(size=20) 때문에 표가 활동 상자 밖으로 삐져나가지 않게 칸 너비에 맞춘다 */
+.activity td input[type=text],.activity td select,.activity td textarea{width:100%;min-width:0!important}
+.activity th,.activity td{word-break:keep-all}
+.activity table{max-width:100%}
+/* 휴대폰처럼 좁은 화면: 칸이 많은 표는 상자 안에서 가로로 밀어 본다 */
+@media (max-width:640px){.activity table{display:block;overflow-x:auto}}
+.pool{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.card{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:14px}
+.sort-table td{min-width:120px}
+details.hint{margin:8px 0;padding:6px 12px;border:1px dashed var(--line);border-radius:8px;background:var(--card)}
+details.hint summary{cursor:pointer;color:var(--accent);font-size:14px}
+details.defs{margin:10px 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px}
+details.defs > summary{cursor:pointer;color:var(--accent)}
+.check{display:block;margin:6px 0}
+.scale{display:flex;gap:14px;flex-wrap:wrap}
+.ws-tools{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:8px 16px;background:var(--bg);border-top:1px solid var(--line)}
+.ws-tools button{cursor:pointer;border:1px solid var(--accent);background:transparent;color:var(--accent);padding:6px 12px;border-radius:6px;font:inherit;font-size:14px}
+.saved{font-size:12px;color:var(--muted);align-self:center}
+@media print{
+  .ws-tools,header.top nav,details.hint{display:none}
+  details.defs > summary{display:none}
+  .activity{border:1px solid #888;page-break-inside:avoid}
+  .activity textarea{border:1px solid #888;background:#fff;color:#000;resize:none}
+  .activity textarea.code{min-height:200px}
+  body{font-size:13px}
+}

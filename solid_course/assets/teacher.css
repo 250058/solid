@@ -1,0 +1,11 @@
+/* 교사 전용 문서(가이드·정답) 스타일 */
+.teacher-banner{background:#b3261e;color:#fff;text-align:center;padding:6px 12px;font-weight:700;font-size:14px}
+.answer{margin:10px 0;padding:10px 14px;border-left:5px solid var(--goodb);background:var(--good);border-radius:6px}
+.answer h4{margin:0 0 4px;font-size:15px}
+.misc{margin:10px 0;padding:10px 14px;border-left:5px solid var(--badb);background:var(--bad);border-radius:6px}
+.rubric th:first-child{width:22%}
+.timeline td:first-child{white-space:nowrap}
+.say{padding:8px 12px;border-left:4px solid var(--accent);background:var(--concept);border-radius:6px;margin:8px 0}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.toc a{padding:4px 12px;border:1px solid var(--line);border-radius:999px;color:var(--accent);text-decoration:none;font-size:14px}
+@media print{.teacher-banner{background:#fff;color:#b3261e;border:1px solid #b3261e}}

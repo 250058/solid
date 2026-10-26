@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02. OCP 개방-폐쇄 원칙</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/quiz.js" defer></script>
+<script src="assets/pyrunner.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <nav>
+    <a href="index.html">목차</a>
+    <a href="chapter_01_srp.html">← 이전: 01 SRP</a>
+    <a href="chapter_03_lsp.html">다음: 03 LSP →</a>
+  </nav>
+  <h1>02. OCP 개방-폐쇄 원칙</h1>
+  <p class="lead">Open-Closed Principle — "확장에는 열려 있고, 수정에는 닫혀 있어야 한다." 끝없이 늘어나는 쇼핑몰 할인 정책을 if-elif 없이 다루는 법을 배웁니다.</p>
+</header>
+
+<main>
+<section id="goals">
+  <h2>학습목표</h2>
+  <ol>
+    <li>"확장에 열림/수정에 닫힘"을 각각 무엇이 열리고 무엇이 닫히는지 구분해 <b>설명</b>할 수 있다.</li>
+    <li>if-elif 분기가 반복적으로 늘어나는 코드를 보고 OCP 위반 지점을 <b>찾을</b> 수 있다.</li>
+    <li>전략 패턴으로 분기를 클래스로 <b>바꾸고</b>, 확장점이 실제로 필요한 곳인지 <b>판단</b>할 수 있다.</li>
+  </ol>
+</section>
+
+<section id="concept">
+  <h2>개념</h2>
+  <p><b>한 문장 정의</b>: 소프트웨어 요소(클래스, 모듈, 함수)는 <b>확장에는 열려 있고, 수정에는 닫혀 있어야</b> 한다.</p>
+  <p>왜 필요할까요? 이미 잘 돌아가며 테스트까지 끝난 코드를 새 기능 때문에 매번 열어 고치면, 그때마다 기존 기능이 깨질 위험과 재테스트 비용이 생깁니다. 새 기능은 <em>새 코드를 추가</em>하는 방식으로 붙일 수 있어야 합니다.</p>
+  <aside class="box concept">
+    <h4>📦 새 개념: 확장에 열림 / 수정에 닫힘</h4>
+    <ul>
+      <li><b>정의</b>: <b>확장에 열림</b> = 새 동작(새 할인 정책 등)을 추가할 수 있다. <b>수정에 닫힘</b> = 그때 이미 동작하는 기존 코드(계산기)는 고치지 않는다</li>
+      <li><b>왜 필요?</b>: 변경이 잦은 부분의 추가가 안정된 부분의 수정으로 번지지 않게 하려고</li>
+      <li><b>예</b>: 새 할인 = <code>DiscountPolicy</code>를 상속한 새 클래스 추가. <code>Checkout</code>은 그대로</li>
+      <li><b>열쇠</b>: 00장의 추상화와 다형성. 변하는 부분을 추상 타입 뒤로 숨기면 쓰는 쪽은 닫히고, 구현 쪽은 열린다</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>📦 새 개념: 전략 패턴 (Strategy Pattern)</h4>
+    <ul>
+      <li><b>정의</b>: 바꿔 끼울 수 있는 알고리즘(전략)들을 같은 인터페이스를 가진 별도 클래스로 만들고, 사용하는 쪽은 그 인터페이스만 보고 전략 객체를 받아 쓰는 설계 패턴</li>
+      <li><b>왜 필요?</b>: "어떤 방식으로 계산할지"를 if-elif가 아니라 객체 선택으로 결정하게 해서, 방식이 늘어도 사용하는 쪽 코드가 바뀌지 않게 한다</li>
+      <li><b>예</b>: <code>Checkout(RateDiscount(0.1))</code>, <code>Checkout(CouponDiscount(3000))</code> — 같은 <code>Checkout</code>, 다른 전략</li>
+    </ul>
+  </aside>
+</section>
+
+<section id="situation">
+  <h2>상황</h2>
+  <div class="situation">
+    <p>온라인 쇼핑몰의 가격 계산기입니다. 처음엔 "회원 10% 할인" 하나였는데, 마케팅팀이 매달 새 할인을 들고 옵니다.</p>
+    <ul>
+      <li>3월: VIP 20% 할인</li>
+      <li>4월: 3,000원 쿠폰</li>
+      <li>11월: <b>"블랙프라이데이! 5만 원 이상 구매 시 30% 할인, 다음 주 월요일 오픈이에요."</b></li>
+    </ul>
+    <p>할인이 생길 때마다 개발자는 <code>PriceCalculator.final_price</code>를 열어 <code>elif</code>를 한 줄씩 추가합니다. 지난달엔 쿠폰 코드를 추가하다 들여쓰기 실수로 VIP 할인이 하루 동안 적용되지 않는 사고도 있었습니다.</p>
+  </div>
+</section>
+
+<section id="bad">
+  <h2>나쁜 코드</h2>
+  <p>파일 상단(설명과 import)입니다.</p>
+  <pre><code>"""02장. OCP 개방-폐쇄 원칙 — 온라인 쇼핑 할인 정책
+
+목적
+    할인 정책이 추가될 때마다 if-elif가 늘어나는 계산기를
+    '전략 패턴'으로 바꾸어, 새 정책을 기존 코드 수정 없이
+    '추가'만으로 붙이는 방법을 익힌다.
+
+다루는 원칙
+    OCP(Open-Closed Principle):
+    "소프트웨어 요소는 확장에는 열려 있고, 수정에는 닫혀 있어야 한다."
+
+실행 방법
+    python3 chapter_02_ocp.py
+"""
+from __future__ import annotations
+
+from abc import ABC, abstractmethod</code></pre>
+  <pre><code class="bad"># ===== 나쁜 코드: 할인 종류마다 if-elif가 늘어나는 계산기 =====
+
+class PriceCalculator:
+    # [문제 1] 할인 종류를 문자열로 받아 분기한다.
+    #          새 할인(예: "생일 쿠폰")이 생길 때마다 이 메서드를 '열어서' 고쳐야 한다.
+    def final_price(self, price: int, discount_type: str) -&gt; int:
+        if discount_type == "none":
+            return price
+        elif discount_type == "member":       # 회원 10% 할인
+            return int(price * 0.9)
+        elif discount_type == "vip":          # VIP 20% 할인
+            return int(price * 0.8)
+        elif discount_type == "coupon":       # 3,000원 쿠폰
+            return max(price - 3000, 0)
+        # [문제 2] 여기 아래로 elif가 계속 쌓인다(블랙프라이데이, 생일, 첫 구매...).
+        #          고칠 때마다 이미 잘 돌던 member/vip 계산까지 다시 테스트해야 한다.
+        # [문제 3] 오타("vlp")를 내도 실행 시점에야 발견된다.
+        else:
+            raise ValueError(f"알 수 없는 할인: {discount_type}")</code></pre>
+  <ul>
+    <li><b>[문제 1]</b> 새 할인 = 기존 메서드 수정. "수정에 닫혀" 있지 않습니다.</li>
+    <li><b>[문제 2]</b> 한 메서드에 모든 할인이 모여 있어, 하나를 고칠 때마다 전체를 다시 테스트해야 합니다. 이미 사고도 났습니다.</li>
+    <li><b>[문제 3]</b> 할인 종류가 문자열이라 오타가 실행 시점까지 숨어 있습니다.</li>
+  </ul>
+</section>
+
+<section id="good">
+  <h2>개선 코드</h2>
+  <pre><code class="good"># ===== 개선 코드: 전략 패턴으로 확장 지점 만들기 =====
+
+# [해결 1] 변하는 부분(할인 계산 방식)을 추상화해 '약속'으로 고정한다.
+#          계산기는 이 약속에만 의존하므로 수정에 '닫힌다'.
+class DiscountPolicy(ABC):
+    @abstractmethod
+    def apply(self, price: int) -&gt; int:
+        """할인이 적용된 가격을 돌려준다(0 미만이 되면 안 된다)."""
+
+
+# [해결 2] 정책 하나 = 클래스 하나(전략). 각 정책은 서로를 모른다.
+class NoDiscount(DiscountPolicy):
+    def apply(self, price: int) -&gt; int:
+        return price
+
+
+class RateDiscount(DiscountPolicy):
+    """회원 10%, VIP 20% 같은 '비율' 할인은 하나의 클래스로 재사용한다."""
+
+    def __init__(self, rate: float) -&gt; None:
+        self.rate = rate
+
+    def apply(self, price: int) -&gt; int:
+        return int(price * (1 - self.rate))
+
+
+class CouponDiscount(DiscountPolicy):
+    def __init__(self, amount: int) -&gt; None:
+        self.amount = amount
+
+    def apply(self, price: int) -&gt; int:
+        return max(price - self.amount, 0)
+
+
+# [해결 3] 계산기는 '어떤' 정책인지 묻지 않는다. 그냥 apply를 부른다(다형성).
+#          새 정책이 몇 개 추가되어도 이 클래스는 한 줄도 바뀌지 않는다 → 수정에 닫힘.
+class Checkout:
+    def __init__(self, policy: DiscountPolicy) -&gt; None:
+        self.policy = policy
+
+    def final_price(self, price: int) -&gt; int:
+        return self.policy.apply(price)
+
+
+# [해결 4] 요구 변경: "블랙프라이데이: 5만원 이상 구매 시 30% 할인" 추가.
+#          → 새 클래스를 '추가'만 했다. 기존 Checkout/다른 정책은 그대로다 → 확장에 열림.
+class BlackFridayDiscount(DiscountPolicy):
+    def __init__(self, threshold: int = 50_000, rate: float = 0.3) -&gt; None:
+        self.threshold = threshold
+        self.rate = rate
+
+    def apply(self, price: int) -&gt; int:
+        if price &gt;= self.threshold:
+            return int(price * (1 - self.rate))
+        return price</code></pre>
+  <ul>
+    <li><b>[해결 1]</b> 변하는 것(할인 계산 방식)을 <code>DiscountPolicy</code> 추상 클래스로 분리했습니다.</li>
+    <li><b>[해결 2]</b> 정책마다 클래스 하나. 회원/VIP처럼 같은 모양의 정책은 매개변수로 재사용합니다.</li>
+    <li><b>[해결 3]</b> <code>Checkout</code>은 정책의 종류를 묻지 않고 <code>apply</code>만 부릅니다 → <b>수정에 닫힘</b>.</li>
+    <li><b>[해결 4]</b> 블랙프라이데이 요구는 <code>BlackFridayDiscount</code>를 <em>추가</em>하는 것으로 끝났습니다 → <b>확장에 열림</b>.</li>
+  </ul>
+  <p>실행 데모:</p>
+  <pre><code># ===== 실행 데모 =====
+if __name__ == "__main__":
+    price = 60_000
+
+    print("--- 나쁜 코드 ---")
+    calc = PriceCalculator()
+    for kind in ["none", "member", "vip", "coupon"]:
+        print(f"{kind:&gt;8}: {calc.final_price(price, kind):,}원")
+    try:
+        calc.final_price(price, "blackfriday")
+    except ValueError as e:
+        # 새 할인을 쓰려면 PriceCalculator를 열어 elif를 추가해야 한다
+        print("블랙프라이데이 실패 →", e)
+
+    print("--- 개선 코드 ---")
+    policies: dict[str, DiscountPolicy] = {
+        "none": NoDiscount(),
+        "member": RateDiscount(0.1),
+        "vip": RateDiscount(0.2),
+        "coupon": CouponDiscount(3000),
+        "blackfriday": BlackFridayDiscount(),  # 기존 코드 수정 없이 추가
+    }
+    for kind, policy in policies.items():
+        print(f"{kind:&gt;11}: {Checkout(policy).final_price(price):,}원")</code></pre>
+  <p>실행 결과(<code>python3 code/chapter_02_ocp.py</code>):</p>
+  <pre><code>--- 나쁜 코드 ---
+    none: 60,000원
+  member: 54,000원
+     vip: 48,000원
+  coupon: 57,000원
+블랙프라이데이 실패 → 알 수 없는 할인: blackfriday
+--- 개선 코드 ---
+       none: 60,000원
+     member: 54,000원
+        vip: 48,000원
+     coupon: 57,000원
+blackfriday: 42,000원</code></pre>
+  <aside class="box tip">
+    <h4>💡 핵심 포인트</h4>
+    <p>데모의 <code>policies</code> 딕셔너리처럼 "어떤 정책을 쓸지 고르는 곳"은 어딘가에 한 군데 남습니다. OCP는 분기를 <em>없애는</em> 것이 아니라, 분기를 <b>객체를 만들어 조립하는 한 곳</b>으로 몰아서 <b>핵심 로직(<code>Checkout</code>)이 흔들리지 않게</b> 하는 것입니다. 이 "조립하는 곳"은 05장 DIP의 의존성 주입과 이어집니다.</p>
+  </aside>
+</section>
+
+<section id="summary">
+  <h2>정리</h2>
+  <table>
+    <thead><tr><th>관점</th><th>나쁜 코드 (if-elif)</th><th>개선 코드 (전략 패턴)</th></tr></thead>
+    <tbody>
+      <tr><td>새 할인 추가</td><td><code>final_price</code> 메서드 수정</td><td>새 <code>DiscountPolicy</code> 클래스 추가</td></tr>
+      <tr><td>기존 할인에 미치는 영향</td><td>같은 메서드 안이라 실수로 깨질 수 있음</td><td>서로 다른 클래스라 영향 없음</td></tr>
+      <tr><td>테스트</td><td>할인 하나 추가에도 전체 재테스트</td><td>새 정책 클래스만 테스트</td></tr>
+      <tr><td>할인 종류 오타</td><td>실행 중 <code>ValueError</code></td><td>없는 클래스 이름은 IDE·정적 검사기가 실행 전에 표시(실행 시에도 조립 지점에서 바로 <code>NameError</code>)</td></tr>
+    </tbody>
+  </table>
+  <aside class="box warn">
+    <h4>⚠️ 흔한 오해와 과잉 적용 주의</h4>
+    <ul>
+      <li><b>"모든 if-elif를 클래스로 바꿔야 한다"</b> — 아닙니다. <code>if price &lt; 0: raise ...</code> 같은 검증, 종류가 고정된 분기(예: 요일 7개)는 그대로 두는 것이 더 읽기 쉽습니다.</li>
+      <li><b>"처음부터 모든 곳에 확장점을 만들어 둬야 한다"</b> — 아닙니다. 확장점은 비용(클래스 수, 간접 호출)이 듭니다. 할인 정책처럼 <b>변경이 실제로 반복되는 곳</b>에만 두세요. 처음 한두 번은 if로 두었다가, 같은 종류의 변경이 반복될 때 리팩터링해도 늦지 않습니다.</li>
+      <li><b>"OCP를 지키면 코드를 절대 고치지 않는다"</b> — 버그 수정이나 예상하지 못한 방향의 변경에는 당연히 수정이 필요합니다. OCP는 <em>예상되는 종류의 변경</em>을 추가만으로 흡수하자는 목표입니다.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="quiz">
+  <h2>이해 점검</h2>
+
+  <div class="q" data-type="choice" data-answer="2">
+    <h4>Q1. [개념 확인] (학습목표 1)</h4>
+    <p>개선 코드에서 블랙프라이데이 할인을 추가할 때, "수정에 닫혀 있다"는 말이 가리키는 대상은?</p>
+    <ol class="options">
+      <li><code>BlackFridayDiscount</code> 클래스</li>
+      <li><code>Checkout</code> 클래스</li>
+      <li>데모의 <code>policies</code> 딕셔너리</li>
+      <li>파이썬의 <code>abc</code> 모듈</li>
+    </ol>
+    <div class="explain"><b>정답: 2번</b><br>새 정책이 추가되어도 <code>Checkout</code>(그리고 기존 정책 클래스들)은 한 줄도 바뀌지 않습니다. 이것이 "수정에 닫힘"입니다.<br><b>왜 1번이 매력적인가?</b> <code>BlackFridayDiscount</code>는 새로 <em>추가된</em> 코드, 즉 "확장"에 해당합니다. <b>왜 3번이 매력적인가?</b> 정책을 고르는 조립 지점은 새 정책을 등록하려면 한 줄 추가가 필요하므로 오히려 닫혀 있지 않은 곳입니다.</div>
+  </div>
+
+  <div class="q" data-type="ox" data-answer="2">
+    <h4>Q2. [개념 확인] (학습목표 1, 3)</h4>
+    <p>"OCP를 지키려면 앞으로 바뀔 가능성이 조금이라도 있는 모든 곳에 추상 클래스와 확장점을 미리 만들어 두어야 한다." (O/X)</p>
+    <ol class="options"><li>O</li><li>X</li></ol>
+    <div class="explain"><b>정답: X</b><br>확장점은 클래스 수와 간접 호출이라는 비용을 만듭니다. 변경이 <b>실제로 반복되는 곳</b>에만 두는 것이 올바른 적용입니다.<br><b>왜 O가 매력적인가?</b> "미리 대비하면 안전하다"는 직관 때문입니다. 하지만 예측이 틀리면 쓰이지 않는 추상화만 남아 코드를 읽기 어렵게 만듭니다(06장 YAGNI).</div>
+  </div>
+
+  <div class="q" data-type="choice" data-answer="1">
+    <h4>Q3. [위반 찾기] (학습목표 2)</h4>
+    <p>같은 쇼핑몰의 배송비 계산입니다. 다음 중 OCP 관점에서 가장 문제가 되는 상황은?</p>
+<pre><code>def shipping_fee(method: str, weight: float) -&gt; int:
+    if method == "standard":
+        return 3000
+    elif method == "express":
+        return 5000 + int(weight * 500)
+    elif method == "pickup":
+        return 0</code></pre>
+    <ol class="options">
+      <li>매 분기마다 "새벽배송", "해외배송", "편의점 픽업" 같은 배송 방식이 계속 추가되고 있다</li>
+      <li>배송 방식은 3가지로 고정이고 5년째 바뀐 적이 없다</li>
+      <li>함수가 클래스가 아니라 함수로 작성되어 있다</li>
+      <li><code>weight</code>가 <code>float</code> 타입이다</li>
+    </ol>
+    <div class="explain"><b>정답: 1번</b><br>배송 방식이 <em>반복적으로 추가</em>된다면, 그때마다 이 함수를 열어 고쳐야 하므로 OCP 위반이 실제 비용이 됩니다. 전략 패턴으로 바꿀 이유가 생깁니다.<br><b>왜 2번이 매력적인가?</b> 코드 모양은 같은 if-elif지만, 변경이 없다면 단순한 분기가 오히려 좋은 설계입니다. OCP 위반 여부는 코드 모양만이 아니라 <b>변경 패턴</b>과 함께 판단합니다. <b>3번</b>: 함수냐 클래스냐는 본질이 아닙니다.</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q4. [리팩터링 실습] (학습목표 3)</h4>
+    <p>본문 개선 코드에 <b>"생일 쿠폰: 가격의 15% 할인, 단 최대 5,000원까지"</b> 정책을 추가하세요. 고쳐야 하는 기존 클래스가 있나요? <code>Checkout(정책).final_price(60_000)</code>의 결과도 계산해 보세요.</p>
+    <div class="explain"><b>예시 답안</b>
+<pre><code>class BirthdayDiscount(DiscountPolicy):
+    def __init__(self, rate: float = 0.15, cap: int = 5000) -&gt; None:
+        self.rate = rate
+        self.cap = cap
+
+    def apply(self, price: int) -&gt; int:
+        discount = min(int(price * self.rate), self.cap)
+        return price - discount</code></pre>
+    기존 클래스는 <b>하나도 고치지 않습니다</b>(조립 지점에 등록하는 한 줄만 추가). 60,000원의 15%는 9,000원이지만 상한 5,000원이 적용되어 <b>55,000원</b>입니다.<br><b>흔한 실수</b>: <code>Checkout</code>에 <code>if isinstance(policy, BirthdayDiscount)</code> 같은 분기를 넣는 것 — 다시 수정에 열린 구조로 돌아갑니다. 상한 처리 같은 정책 고유 규칙은 정책 클래스 안에 둡니다.</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q5. [서술형] (학습목표 1, 3)</h4>
+    <p>팀원이 "할인 정책이 하나뿐인 신규 서비스에도 <code>DiscountPolicy</code> 추상 클래스와 전략 패턴부터 만들자"고 합니다. 동의하나요? OCP의 목적과 비용을 근거로 2~3문장으로 답하세요.</p>
+    <div class="explain"><b>모범 답안 요지</b>: 지금 당장은 동의하지 않는 편이 낫습니다. OCP의 목적은 반복되는 변경을 기존 코드 수정 없이 흡수하는 것인데, 정책이 하나뿐이고 추가 계획도 불확실하면 확장점은 비용(클래스·간접 호출)만 늘립니다. 두 번째, 세 번째 할인이 실제로 들어오며 같은 종류의 변경이 반복되는 시점에 전략 패턴으로 리팩터링하는 것이 합리적입니다. (단, 기획상 다양한 할인이 확정되어 있다면 처음부터 도입할 근거가 됩니다.)<br><b>채점 포인트</b>: ① OCP 목적=반복 변경 흡수 ② 확장점의 비용 ③ 도입 시점/조건 판단.</div>
+  </div>
+</section>
+</main>
+
+<nav class="pager">
+  <a href="chapter_01_srp.html">← 01 SRP 단일 책임 원칙</a>
+  <a href="chapter_03_lsp.html">03 LSP 리스코프 치환 원칙 →</a>
+</nav>
+</body>
+</html>

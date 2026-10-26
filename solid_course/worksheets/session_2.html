@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2차시 약속 탐구 학습지</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/worksheet.css">
+<script src="../assets/worksheet.js" defer></script>
+<script src="../assets/pyrunner.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <nav>
+    <a href="../index.html">목차</a>
+    <a href="session_1.html">← 1차시</a>
+    <a href="session_3.html">3차시 →</a>
+  </nav>
+  <h1>2차시. 약속을 지키는 타입</h1>
+  <p class="lead">"펭귄은 새다." 맞는 말입니다. 그런데 새를 날리는 프로그램에 펭귄을 넣어도 될까요? 오늘은 코드를 <b>쓰는 쪽이 무엇을 믿고 있는지</b>를 따라가 봅니다.</p>
+  <div class="ws-meta">
+    <span>2차시 / 3차시</span><span>50분</span><span>개념적 렌즈: 약속(Contract)</span>
+    <span>시작 코드: <code>code/s2_birds.py</code> · <code>code/s2_office_machine.py</code> · <code>code/s2_transfer_smarthome.py</code> <a href="../index.html#run">(내려받기)</a></span>
+  </div>
+</header>
+
+<main>
+
+<div class="ws-id">
+  <div><label for="id-name">이름</label><input id="id-name" type="text" data-k="id-name"></div>
+  <div><label for="id-no">학번</label><input id="id-no" type="text" data-k="id-no"></div>
+  <div><label for="id-group">모둠 / 짝</label><input id="id-group" type="text" data-k="id-group"></div>
+  <div><label for="id-date">날짜</label><input id="id-date" type="text" data-k="id-date"></div>
+</div>
+
+<div class="lens">
+  <b>오늘의 렌즈: 약속(Contract)</b><br>
+  이 타입을 쓰는 코드는 무엇을 믿고 있는가? 그 믿음을 모든 하위 타입이 지키는가? 약속이 너무 크지는 않은가?
+</div>
+
+<section id="goals">
+  <h2>학습목표</h2>
+  <ul>
+    <li><b>목표 2-a</b> 상위 타입을 쓰는 함수에 하위 타입을 넣은 결과를 예측·관찰하여, 깨진 약속의 종류를 분류할 수 있다.</li>
+    <li><b>목표 2-b</b> 너무 큰 인터페이스를 쓰는 쪽(클라이언트)별 작은 <code>Protocol</code>로 나누고, 각 클라이언트가 필요한 것에만 의존하도록 코드를 고칠 수 있다.</li>
+    <li><b>목표 2-c</b> 낯선 도메인의 타입 설계에서 약속이 깨진 곳을 찾아 개선안을 제시할 수 있다.</li>
+  </ul>
+</section>
+
+<section id="questions">
+  <h2>오늘 붙잡고 갈 질문</h2>
+  <ul>
+    <li><span class="q-level fact">사실적</span><code>launch_all(birds)</code>에 <code>Penguin</code>을 넣으면 어떤 일이 일어나는가? 예외가 나는가, 조용히 틀리는가?</li>
+    <li><span class="q-level fact">사실적</span><code>OldPrinter</code>는 <code>Machine</code>의 메서드 중 몇 개를 실제로 할 수 있는가?</li>
+    <li><span class="q-level concept">개념적</span>"펭귄은 새다"가 참인데 왜 코드에서는 <code>Bird</code>를 대신할 수 없을까? 현실의 분류와 코드의 약속은 어떻게 다른가?</li>
+    <li><span class="q-level concept">개념적</span><code>NotImplementedError</code>를 던지는 메서드는 약속에 대해 무엇을 말해 주는가?</li>
+    <li><span class="q-level debate">논쟁적</span>지원하지 않는 기능에 <code>NotImplementedError</code>를 던지는 것은 '정직한 설계'인가, '약속 위반'인가?</li>
+  </ul>
+</section>
+
+<!-- ============================ 1부: 새 날리기 ============================ -->
+<h2>1부. 새 날리기 프로그램</h2>
+<p class="situation">학교 <b>생물 시뮬레이션 동아리</b>는 여러 새를 한꺼번에 같은 높이로 날려 고도를 기록하는 <code>launch_all</code> 함수를 만들었습니다. 부원들이 새 종류를 하나씩 추가하고 있습니다.</p>
+
+<section class="activity" data-type="predict" id="a2-1">
+  <h3>활동 2-1. 넣기 전에 예측하기</h3>
+  <div class="tags"><span class="t-type">예측하기</span><span>5분</span><span>개인</span><span>목표 2-a</span></div>
+
+  <p><b>① 사전 생각.</b> 다음 문장에 얼마나 동의하나요? <i>"자식 클래스가 부모 클래스를 상속했다면, 부모가 쓰이던 자리에 자식을 넣어도 항상 괜찮다."</i></p>
+  <div class="scale">
+    <label><input type="radio" name="pre-agree" data-k="pre-agree-1"> 1 전혀 아니다</label>
+    <label><input type="radio" name="pre-agree" data-k="pre-agree-2"> 2 아닌 편</label>
+    <label><input type="radio" name="pre-agree" data-k="pre-agree-3"> 3 그런 편</label>
+    <label><input type="radio" name="pre-agree" data-k="pre-agree-4"> 4 매우 그렇다</label>
+  </div>
+  <textarea data-k="a21-pre" placeholder="그렇게 고른 이유 한 줄"></textarea>
+
+  <p><b>② 코드 읽기.</b> <code>code/s2_birds.py</code>의 핵심 부분입니다. <b>아직 실행하지 마세요.</b></p>
+<pre><code>class Bird(ABC):
+    """fly(altitude) 의 약속
+        - 받는 조건  : altitude 는 0보다 큰 정수이면 된다.
+        - 끝난 뒤 보장: 호출이 끝나면 self.altitude == altitude 이다.
+        - 항상 참    : self.altitude 는 언제나 0 이상이다."""
+    def __init__(self, name): self.name = name; self.altitude = 0
+    @abstractmethod
+    def fly(self, altitude: int) -&gt; None: ...
+
+class Sparrow(Bird):
+    def fly(self, altitude): self.altitude = altitude; print(...)
+
+class Eagle(Bird):
+    def fly(self, altitude): print("날개를 활짝 편다"); self.altitude = altitude; print(...)
+
+class Penguin(Bird):
+    def fly(self, altitude): print("(뒤뚱뒤뚱 걷기만 한다)")   # 날 수 없으니 그냥 넘어간다
+
+class RubberDuckToy(Bird):          # 오리 모양 장난감 드론
+    def fly(self, altitude):
+        if altitude &lt;= 10:
+            raise ValueError("장난감 드론은 10m보다 높게만 뜰 수 있어요")
+        self.altitude = altitude
+
+def launch_all(birds: list[Bird], altitude: int = 5):
+    for bird in birds:
+        bird.fly(altitude)          # 예외가 나면 잡아서 기록한다
+        # 끝난 뒤 bird.altitude 를 보고 "약속 지킴 / 약속 깨짐" 을 출력한다</code></pre>
+
+  <p><b>③ 예측표.</b> <code>launch_all([참새, 독수리, 펭귄, 오리드론])</code>을 고도 5m로 실행하면?</p>
+  <table class="sort-table">
+    <thead><tr><th>새</th><th>예상 결과</th><th>기록될 고도(m)</th><th>그렇게 예상한 까닭</th></tr></thead>
+    <tbody>
+      <tr><td><code>Sparrow</code></td>
+        <td><select data-k="a21-sp-r"><option></option><option>약속 지킴</option><option>약속 깨짐</option><option>예외 발생</option></select></td>
+        <td><input type="text" data-k="a21-sp-h"></td><td><input type="text" data-k="a21-sp-w"></td></tr>
+      <tr><td><code>Eagle</code></td>
+        <td><select data-k="a21-ea-r"><option></option><option>약속 지킴</option><option>약속 깨짐</option><option>예외 발생</option></select></td>
+        <td><input type="text" data-k="a21-ea-h"></td><td><input type="text" data-k="a21-ea-w"></td></tr>
+      <tr><td><code>Penguin</code></td>
+        <td><select data-k="a21-pe-r"><option></option><option>약속 지킴</option><option>약속 깨짐</option><option>예외 발생</option></select></td>
+        <td><input type="text" data-k="a21-pe-h"></td><td><input type="text" data-k="a21-pe-w"></td></tr>
+      <tr><td><code>RubberDuckToy</code></td>
+        <td><select data-k="a21-du-r"><option></option><option>약속 지킴</option><option>약속 깨짐</option><option>예외 발생</option></select></td>
+        <td><input type="text" data-k="a21-du-h"></td><td><input type="text" data-k="a21-du-w"></td></tr>
+    </tbody>
+  </table>
+  <p><span class="q-level fact">사실적</span> 네 마리 중 <b>가장 늦게 발견될 것 같은</b> 문제는 어느 새의 것인가요? 왜 그렇게 생각하나요?</p>
+  <textarea data-k="a21-late"></textarea>
+</section>
+
+<section class="activity" data-type="observe" id="a2-2">
+  <h3>활동 2-2. 실행하고 약속 3칸 표 만들기</h3>
+  <div class="tags"><span class="t-type">실행·관찰</span><span>7분</span><span>짝</span><span>목표 2-a</span></div>
+
+  <p><b>① 실행.</b> 터미널에서 <code>python3 s2_birds.py</code>를 실행하고, 실제 결과를 예측과 나란히 적으세요.</p>
+  <table class="sort-table">
+    <thead><tr><th>새</th><th>실제 출력(핵심만)</th><th>예측과 같았나?</th></tr></thead>
+    <tbody>
+      <tr><td><code>Sparrow</code></td><td><input type="text" data-k="a22-sp-o"></td><td><select data-k="a22-sp-s"><option></option><option>같음</option><option>다름</option></select></td></tr>
+      <tr><td><code>Eagle</code></td><td><input type="text" data-k="a22-ea-o"></td><td><select data-k="a22-ea-s"><option></option><option>같음</option><option>다름</option></select></td></tr>
+      <tr><td><code>Penguin</code></td><td><input type="text" data-k="a22-pe-o"></td><td><select data-k="a22-pe-s"><option></option><option>같음</option><option>다름</option></select></td></tr>
+      <tr><td><code>RubberDuckToy</code></td><td><input type="text" data-k="a22-du-o"></td><td><select data-k="a22-du-s"><option></option><option>같음</option><option>다름</option></select></td></tr>
+    </tbody>
+  </table>
+
+  <p><b>② 약속 3칸 표.</b> <code>launch_all</code>은 어떤 새가 들어올지 모르고 <code>Bird</code>만 믿습니다. 그 믿음을 짝과 함께 <b>자기 말로</b> 세 칸에 나누어 쓰세요.</p>
+  <table class="sort-table">
+    <thead><tr><th>받는 조건<br><small>호출하는 쪽이 지키면 되는 것</small></th><th>끝난 뒤 보장<br><small>호출 뒤 반드시 이루어지는 것</small></th><th>항상 참<br><small>언제 보아도 성립하는 성질</small></th></tr></thead>
+    <tbody><tr>
+      <td><textarea data-k="a22-c-pre"></textarea></td>
+      <td><textarea data-k="a22-c-post"></textarea></td>
+      <td><textarea data-k="a22-c-inv"></textarea></td>
+    </tr></tbody>
+  </table>
+
+  <p><b>③ 어느 칸을 깼나?</b> 약속을 지키지 못한 새마다 깨진 칸에 표시하고 증거(출력)를 쓰세요. 깬 칸이 없으면 비워 두세요.</p>
+  <table class="sort-table">
+    <thead><tr><th>새</th><th>받는 조건</th><th>끝난 뒤 보장</th><th>항상 참</th><th>증거</th></tr></thead>
+    <tbody>
+      <tr><td><code>Penguin</code></td>
+        <td><input type="checkbox" data-k="a22-pe-1" aria-label="펭귄 받는 조건"></td>
+        <td><input type="checkbox" data-k="a22-pe-2" aria-label="펭귄 끝난 뒤 보장"></td>
+        <td><input type="checkbox" data-k="a22-pe-3" aria-label="펭귄 항상 참"></td>
+        <td><input type="text" data-k="a22-pe-e"></td></tr>
+      <tr><td><code>RubberDuckToy</code></td>
+        <td><input type="checkbox" data-k="a22-du-1" aria-label="오리드론 받는 조건"></td>
+        <td><input type="checkbox" data-k="a22-du-2" aria-label="오리드론 끝난 뒤 보장"></td>
+        <td><input type="checkbox" data-k="a22-du-3" aria-label="오리드론 항상 참"></td>
+        <td><input type="text" data-k="a22-du-e"></td></tr>
+    </tbody>
+  </table>
+
+  <p><b>④</b> <span class="q-level fact">사실적</span> 파일 맨 아래 주석을 풀고 고도 20m로 다시 실행해 보세요. 오리드론의 결과는 어떻게 달라졌나요? 이것은 "오리드론은 괜찮다"는 뜻일까요?</p>
+  <textarea data-k="a22-20m"></textarea>
+  <p><b>⑤</b> <span class="q-level fact">사실적</span> 펭귄과 오리드론 중 하나는 <b>시끄럽게</b>, 하나는 <b>조용히</b> 문제를 일으켰습니다. 어느 쪽이 더 위험한가요?</p>
+  <textarea data-k="a22-quiet"></textarea>
+  <p><b>⑥</b> <span class="q-level concept">개념적</span> "펭귄은 새다"가 참인데도 펭귄이 <code>Bird</code> 자리를 대신할 수 없었던 까닭은 무엇일까요? '분류'와 '약속'이라는 말을 넣어 쓰세요.</p>
+  <textarea data-k="a22-why"></textarea>
+  <details class="hint"><summary>힌트 1단계 (방향)</summary><p><code>launch_all</code>의 입장이 되어 보세요. 이 함수는 새가 "무엇인지"를 묻나요, 아니면 새가 "무엇을 해 주는지"를 믿나요?</p></details>
+</section>
+
+<section class="activity" data-type="sort" id="a2-3">
+  <h3>활동 2-3. 하위 클래스 카드 분류</h3>
+  <div class="tags"><span class="t-type">사례 분류</span><span>7분</span><span>모둠</span><span>목표 2-a</span></div>
+  <p>활동 2-2의 세 칸을 기준으로 분류합니다. 각 카드는 <b>부모의 약속</b>과 <b>자식의 실제 행동</b>을 보여 줍니다. 분류 이름은 아래 넷 중 하나입니다.</p>
+  <ul>
+    <li><b>치환 가능</b>: 부모 자리에 넣어도 쓰는 쪽이 믿던 것이 그대로 성립한다.</li>
+    <li><b>받는 조건을 좁힘</b> (사전조건 강화): 부모는 받던 입력을 자식이 거부한다.</li>
+    <li><b>보장을 덜 지킴</b> (사후조건 약화): 부모가 약속한 결과를 자식이 다 이루지 않는다.</li>
+    <li><b>항상 참을 깸</b> (불변식 위반): 언제나 성립해야 할 성질이 자식에서 무너진다.</li>
+  </ul>
+
+  <div class="pool">
+    <div class="card"><b>카드 A</b> <code>ScoreBook.add(points)</code><br>부모: 끝나면 <code>total</code>이 <code>points</code>만큼 늘어난다.<br>자식: <code>self.total += points // 2</code></div>
+    <div class="card"><b>카드 B</b> <code>Cart.add(item)</code><br>부모: 끝나면 <code>items</code>에 <code>item</code>이 들어 있다.<br>자식: <code>super().add(item)</code> 한 뒤 <code>print("담김:", item)</code></div>
+    <div class="card"><b>카드 C</b> <code>Wallet.spend(amount)</code><br>부모: 잔액 <code>balance</code>는 항상 0 이상이다.<br>자식: 잔액보다 큰 금액도 그냥 빼서 <code>balance</code>가 -3000이 될 수 있다.</div>
+    <div class="card"><b>카드 D</b> <code>Thermometer.set_offset(x)</code><br>부모: 어떤 정수 <code>x</code>든 보정값으로 받는다.<br>자식: <code>if x &lt; 0: raise ValueError</code></div>
+    <div class="card"><b>카드 E</b> <code>Library.find(word)</code><br>부모: <code>word</code>가 들어 있는 책 목록을 돌려준다.<br>자식: 무엇을 물어도 <code>return []</code></div>
+    <div class="card"><b>카드 F</b> <code>Ticket.price(age)</code><br>부모: <code>age</code>는 0~120을 받는다.<br>자식: <code>age</code> 0~150까지 받고, 0~120에서는 부모와 같은 값을 돌려준다.</div>
+  </div>
+
+  <table class="sort-table">
+    <thead><tr><th>카드</th><th>분류</th><th>근거 한 줄 (쓰는 쪽이 무엇을 믿다가 놀라는가?)</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td><select data-k="a23-A"><option></option><option>치환 가능</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option></select></td><td><input type="text" data-k="a23-A-w"></td></tr>
+      <tr><td>B</td><td><select data-k="a23-B"><option></option><option>치환 가능</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option></select></td><td><input type="text" data-k="a23-B-w"></td></tr>
+      <tr><td>C</td><td><select data-k="a23-C"><option></option><option>치환 가능</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option></select></td><td><input type="text" data-k="a23-C-w"></td></tr>
+      <tr><td>D</td><td><select data-k="a23-D"><option></option><option>치환 가능</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option></select></td><td><input type="text" data-k="a23-D-w"></td></tr>
+      <tr><td>E</td><td><select data-k="a23-E"><option></option><option>치환 가능</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option></select></td><td><input type="text" data-k="a23-E-w"></td></tr>
+      <tr><td>F</td><td><select data-k="a23-F"><option></option><option>치환 가능</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option></select></td><td><input type="text" data-k="a23-F-w"></td></tr>
+    </tbody>
+  </table>
+
+  <p><span class="q-level concept">개념적</span> 카드 D와 카드 F는 둘 다 입력 범위를 바꿨습니다. 왜 결과가 다를까요? "더 엄격한 검사를 추가하면 더 안전하다"는 말과 연결해 모둠 의견을 쓰세요.</p>
+  <textarea data-k="a23-DF"></textarea>
+  <p>활동 2-1의 <code>Penguin</code>과 <code>RubberDuckToy</code>는 각각 어느 분류에 들어가나요?</p>
+  <textarea data-k="a23-birds"></textarea>
+</section>
+
+<!-- ============================ 2부: 사무기기 ============================ -->
+<h2>2부. 동아리방 사무기기 프로그램</h2>
+<p class="situation">같은 동아리방에는 새 복합기(<code>SmartMFP</code>)와 출력만 되는 구형 프린터(<code>OldPrinter</code>)가 있습니다. 관리 프로그램은 모든 기기가 <code>Machine</code>이라는 하나의 큰 약속(출력·스캔·팩스·스테이플)을 지키도록 만들어져 있습니다.</p>
+
+<section class="activity" data-type="code" id="a2-4">
+  <h3>활동 2-4. 큰 약속을 쓰는 쪽에 맞게 쪼개기</h3>
+  <div class="tags"><span class="t-type">코드 수정</span><span>10분</span><span>개인</span><span>목표 2-b</span></div>
+
+  <p><b>① 읽기(2분).</b> <code>code/s2_office_machine.py</code>를 열고 실행하세요. 그리고 표를 채우세요.</p>
+  <p><span class="q-level fact">사실적</span> <code>OldPrinter</code>는 <code>Machine</code>의 메서드 4개 중 몇 개를 실제로 할 수 있나요? <input type="text" data-k="a24-count" aria-label="할 수 있는 메서드 수"> 개</p>
+  <table class="sort-table">
+    <thead><tr><th>쓰는 쪽(클라이언트) 함수</th><th>실제로 부르는 메서드</th><th>이 함수가 믿어야 하는 최소한의 약속</th></tr></thead>
+    <tbody>
+      <tr><td><code>print_report</code></td><td><input type="text" data-k="a24-c1-m"></td><td><input type="text" data-k="a24-c1-p"></td></tr>
+      <tr><td><code>archive_scan</code></td><td><input type="text" data-k="a24-c2-m"></td><td><input type="text" data-k="a24-c2-p"></td></tr>
+      <tr><td><code>send_permission_fax</code></td><td><input type="text" data-k="a24-c3-m"></td><td><input type="text" data-k="a24-c3-p"></td></tr>
+    </tbody>
+  </table>
+
+  <p><b>② 고치기(7분).</b> 파일 안의 <code># TODO(학생) 1 → 2 → 3</code> 순서로 고치고, 하나 고칠 때마다 다시 실행해 점검 결과를 기록하세요. 점검 코드는 고치지 않습니다.</p>
+  <table class="sort-table">
+    <thead><tr><th>시점</th><th>통과 수 (/4)</th><th>새로 본 메시지나 오류</th></tr></thead>
+    <tbody>
+      <tr><td>처음</td><td><input type="text" data-k="a24-r0"></td><td><input type="text" data-k="a24-r0m"></td></tr>
+      <tr><td>TODO 1 뒤</td><td><input type="text" data-k="a24-r1"></td><td><input type="text" data-k="a24-r1m"></td></tr>
+      <tr><td>TODO 2 뒤</td><td><input type="text" data-k="a24-r2"></td><td><input type="text" data-k="a24-r2m"></td></tr>
+      <tr><td>TODO 3 뒤</td><td><input type="text" data-k="a24-r3"></td><td><input type="text" data-k="a24-r3m"></td></tr>
+    </tbody>
+  </table>
+  <details class="hint"><summary>힌트 1단계 (방향)</summary><p>Protocol 하나에는 "한 클라이언트가 함께 부르는 메서드"만 넣습니다. ①의 표 오른쪽 칸이 곧 Protocol 하나입니다.</p></details>
+  <details class="hint"><summary>힌트 2단계 (구조)</summary>
+    <p>Protocol의 모양은 이렇습니다. (오늘 과제와 다른 예시입니다.)</p>
+<pre><code>@runtime_checkable
+class Greeter(Protocol):
+    def greet(self, name: str) -&gt; str: ...</code></pre>
+    <p>Protocol은 상속하지 않아도, 메서드 모양만 맞으면 그 약속을 지킨 것으로 봅니다. TODO 2에서 <code>OldPrinter</code>가 꼭 <code>Machine</code>을 상속해야 하는지 생각해 보세요.</p>
+  </details>
+
+  <p><b>③ 기록.</b> 완성한 Protocol 정의 부분을 붙여 넣으세요.</p>
+  <textarea class="code" data-k="a24-code" spellcheck="false"></textarea>
+  <p>TODO 2에서 메서드를 지웠을 때 처음에 어떤 오류가 났나요? 그 오류는 <code>Machine</code>이 어떤 약속이었다는 것을 보여 주나요?</p>
+  <textarea data-k="a24-abc"></textarea>
+  <p>스테이플(<code>staple_doc</code>)은 어디에 두었나요? 그렇게 정한 기준은?</p>
+  <textarea data-k="a24-staple"></textarea>
+</section>
+
+<section class="activity" data-type="debate" id="a2-5">
+  <h3>활동 2-5. 논쟁: NotImplementedError는 정직한가?</h3>
+  <div class="tags"><span class="t-type">찬반 논쟁</span><span>6분</span><span>모둠</span><span>목표 2-a, 2-b</span></div>
+  <p><span class="q-level debate">논쟁적</span> <b>"지원하지 않는 기능에 <code>NotImplementedError</code>를 던지는 것은 정직한 설계다."</b></p>
+  <p>모둠을 찬성·반대로 나누고, 활동 2-1~2-4에서 본 코드를 증거로 근거를 2개씩 쓰세요. 내 역할:
+    <label><input type="radio" name="a25-role" data-k="a25-role-pro"> 찬성</label>
+    <label><input type="radio" name="a25-role" data-k="a25-role-con"> 반대</label>
+  </p>
+  <table class="sort-table">
+    <thead><tr><th></th><th>찬성: 정직한 설계다</th><th>반대: 약속 위반이다</th></tr></thead>
+    <tbody>
+      <tr><td>근거 1</td><td><textarea data-k="a25-pro1"></textarea></td><td><textarea data-k="a25-con1"></textarea></td></tr>
+      <tr><td>근거 2</td><td><textarea data-k="a25-pro2"></textarea></td><td><textarea data-k="a25-con2"></textarea></td></tr>
+    </tbody>
+  </table>
+  <p><b>모둠 판정 기준 한 문장.</b> "<code>NotImplementedError</code>가 문제가 되는 때는 ____ 이다."</p>
+  <textarea data-k="a25-rule"></textarea>
+  <p>이 기준으로 보면, 활동 2-4에서 고친 뒤의 <code>OldPrinter</code>에는 왜 <code>NotImplementedError</code>가 더 이상 필요 없나요?</p>
+  <textarea data-k="a25-old"></textarea>
+</section>
+
+<!-- ============================ 3부: 일반화 ============================ -->
+<h2>3부. 규칙으로 말하기</h2>
+
+<section class="activity" data-type="generalize" id="a2-6">
+  <h3>활동 2-6. "약속"으로 원칙 문장 만들기</h3>
+  <div class="tags"><span class="t-type">일반화</span><span>5분</span><span>개인 → 모둠</span><span>목표 2-a, 2-b</span></div>
+  <p><span class="q-level concept">개념적</span> 새 날리기(1부)와 사무기기(2부)에서 발견한 것을 하나의 규칙으로 쓰세요. <b>"약속"</b>이라는 낱말을 꼭 넣고, 새나 프린터 같은 구체적인 이름 없이 다른 프로그램에도 통하게 쓰세요.</p>
+  <p><b>① 내 문장</b></p>
+  <textarea class="tall" data-k="a26-mine"></textarea>
+  <p>내 문장 점검:</p>
+  <label class="check"><input type="checkbox" data-k="a26-ck1"> 하위 타입이 상위 타입 자리에 들어갈 수 있는 조건을 말했다.</label>
+  <label class="check"><input type="checkbox" data-k="a26-ck2"> 약속의 <b>크기</b>(얼마나 커야/작아야 하는지)를 말했다.</label>
+  <label class="check"><input type="checkbox" data-k="a26-ck3"> 약속을 정하는 기준이 '누구'인지 말했다.</label>
+  <p><b>② 모둠 합의 문장</b> (모둠원 문장에서 좋은 부분을 모아 하나로)</p>
+  <textarea class="tall" data-k="a26-group"></textarea>
+
+  <hr>
+  <p><b>③ 모둠 문장을 다 쓴 뒤에</b> 아래 개념 확인을 펼쳐 비교하세요.</p>
+  <details class="defs">
+    <summary><b>개념 확인 펼치기</b> (일반화 문장을 쓴 뒤 열어 보세요)</summary>
+    <aside class="box concept">
+      <h4>리스코프 치환 원칙 (LSP, Liskov Substitution Principle)</h4>
+      <p>상위 타입을 쓰는 코드는, 그 자리에 어떤 하위 타입을 넣어도 상위 타입이 약속한 그대로 올바르게 동작해야 한다. 상속 문법이나 메서드 이름이 같은 것만으로는 부족하고, <b>행동</b>이 약속을 지켜야 한다.</p>
+    </aside>
+    <aside class="box concept">
+      <h4>계약: 사전조건 · 사후조건 · 불변식</h4>
+      <ul>
+        <li><b>사전조건</b>: 호출하는 쪽이 지켜야 하는 입력 조건. 하위 타입은 이것을 <b>더 좁히면(강화) 안 된다</b>. 넓히는 것은 괜찮다.</li>
+        <li><b>사후조건</b>: 호출이 끝난 뒤 보장되는 결과. 하위 타입은 이것을 <b>덜 지키면(약화) 안 된다</b>. 더 보장하는 것은 괜찮다.</li>
+        <li><b>불변식</b>: 객체에서 언제나 성립해야 하는 성질. 하위 타입도 <b>유지해야 한다</b>.</li>
+      </ul>
+    </aside>
+    <aside class="box concept">
+      <h4>인터페이스 분리 원칙 (ISP, Interface Segregation Principle)</h4>
+      <p>클라이언트는 자신이 쓰지 않는 메서드에 의존하도록 강요받아서는 안 된다. 큰 인터페이스는 <b>쓰는 쪽(클라이언트)이 함께 쓰는 묶음</b> 기준으로 나눈다. 메서드 하나마다 인터페이스를 만들라는 뜻이 아니다.</p>
+    </aside>
+    <aside class="box concept">
+      <h4>파이썬 Protocol</h4>
+      <p><code>typing.Protocol</code>은 "이런 메서드를 가진 것"이라는 약속을 정의한다. 클래스가 Protocol을 상속하지 않아도 메서드 모양이 맞으면 그 약속을 지킨 것으로 본다(구조적 타이핑). 실행 중 <code>isinstance</code>로 검사하려면 <code>@runtime_checkable</code>이 필요하다.</p>
+    </aside>
+  </details>
+  <p><b>④</b> 우리 모둠 문장에 있었던 것 / 빠졌던 것을 하나씩 쓰세요.</p>
+  <textarea data-k="a26-compare"></textarea>
+  <p><span class="q-level concept">개념적</span> 활동 2-4의 <code>OldPrinter</code>가 억지로 <code>NotImplementedError</code>를 던지던 문제(약속을 못 지킴)와, <code>Machine</code>이 너무 컸던 문제(약속이 너무 큼)는 어떻게 이어지나요?</p>
+  <textarea data-k="a26-link"></textarea>
+</section>
+
+<!-- ============================ 4부: 전이·성찰 ============================ -->
+<h2>4부. 낯선 곳에 적용하기</h2>
+
+<section class="activity" data-type="transfer" id="a2-7">
+  <h3>활동 2-7. 스마트홈 앱 점검</h3>
+  <div class="tags"><span class="t-type">전이</span><span>6분</span><span>개인</span><span>목표 2-c</span></div>
+  <p class="situation">스마트홈 앱은 거실 전구, 방 스피커, 현관 도어락을 모두 <code>Device</code>(<code>turn_on</code> · <code>set_volume</code> · <code>set_color</code> · <code>lock</code>)로 다룹니다. '외출 모드' 버튼을 누르면 앱이 모든 기기에 모든 명령을 보냅니다.</p>
+  <p><b>①</b> <code>code/s2_transfer_smarthome.py</code>의 <code>Device</code> 약속(docstring)을 읽고 실행하세요. 코드는 고치지 않습니다.</p>
+  <p><b>②</b> <code># [A]</code>~<code># [F]</code> 표시 위치를 판정하세요. <b>표시가 있다고 모두 문제인 것은 아닙니다.</b></p>
+  <table class="sort-table">
+    <thead><tr><th>위치</th><th>판정</th><th>너무 큰 약속 탓인가?</th><th>근거 (약속의 어느 부분, 실행 결과의 어느 줄)</th></tr></thead>
+    <tbody>
+      <tr><td>[A]</td><td><select data-k="a27-A"><option></option><option>문제 없음</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option><option>못 하는 기능을 강요받음</option></select></td><td><select data-k="a27-A-i"><option></option><option>예</option><option>아니오</option></select></td><td><input type="text" data-k="a27-A-w"></td></tr>
+      <tr><td>[B]</td><td><select data-k="a27-B"><option></option><option>문제 없음</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option><option>못 하는 기능을 강요받음</option></select></td><td><select data-k="a27-B-i"><option></option><option>예</option><option>아니오</option></select></td><td><input type="text" data-k="a27-B-w"></td></tr>
+      <tr><td>[C]</td><td><select data-k="a27-C"><option></option><option>문제 없음</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option><option>못 하는 기능을 강요받음</option></select></td><td><select data-k="a27-C-i"><option></option><option>예</option><option>아니오</option></select></td><td><input type="text" data-k="a27-C-w"></td></tr>
+      <tr><td>[D]</td><td><select data-k="a27-D"><option></option><option>문제 없음</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option><option>못 하는 기능을 강요받음</option></select></td><td><select data-k="a27-D-i"><option></option><option>예</option><option>아니오</option></select></td><td><input type="text" data-k="a27-D-w"></td></tr>
+      <tr><td>[E]</td><td><select data-k="a27-E"><option></option><option>문제 없음</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option><option>못 하는 기능을 강요받음</option></select></td><td><select data-k="a27-E-i"><option></option><option>예</option><option>아니오</option></select></td><td><input type="text" data-k="a27-E-w"></td></tr>
+      <tr><td>[F]</td><td><select data-k="a27-F"><option></option><option>문제 없음</option><option>받는 조건을 좁힘</option><option>보장을 덜 지킴</option><option>항상 참을 깸</option><option>못 하는 기능을 강요받음</option></select></td><td><select data-k="a27-F-i"><option></option><option>예</option><option>아니오</option></select></td><td><input type="text" data-k="a27-F-w"></td></tr>
+    </tbody>
+  </table>
+  <p><b>③ 분리안 스케치.</b> <code>Device</code>를 어떤 작은 Protocol들로 나누겠나요? Protocol 이름과 메서드, 그리고 각 기기가 어느 Protocol을 지키는지 쓰세요. (완성 코드가 아니어도 됩니다.)</p>
+  <textarea class="code" data-k="a27-sketch" spellcheck="false"></textarea>
+  <p>'외출 모드' 기능은 나눈 뒤에 어떤 Protocol만 알면 되나요?</p>
+  <textarea data-k="a27-client"></textarea>
+</section>
+
+<section class="activity" data-type="reflect" id="a2-8">
+  <h3>활동 2-8. 퇴장권과 다시 생각하기</h3>
+  <div class="tags"><span class="t-type">성찰</span><span>4분</span><span>개인</span><span>목표 2-a, 2-b, 2-c</span></div>
+
+  <p><b>1.</b> <code>Account.withdraw(amount)</code>의 약속은 "0보다 큰 금액이면 출금한다, 잔고는 항상 0 이상"입니다. <code>StudentAccount</code>가 "1만 원 이하만 출금 가능"으로 바꾸면 어떤 약속이 깨지나요?</p>
+  <select data-k="x1-kind"><option></option><option>받는 조건을 좁힘 (사전조건 강화)</option><option>보장을 덜 지킴 (사후조건 약화)</option><option>항상 참을 깸 (불변식 위반)</option><option>깨지지 않음</option></select>
+  <textarea data-k="x1-why" placeholder="이유"></textarea>
+
+  <p><b>2.</b> <code>def scan_homework(m: Machine)</code>가 실제로는 <code>m.scan_doc(...)</code>만 부릅니다. 첫 줄을 어떻게 바꾸겠나요? (코드 한 줄)</p>
+  <input type="text" data-k="x2-code" style="width:100%;font-family:ui-monospace,Menlo,Consolas,monospace" aria-label="바꾼 함수 첫 줄">
+
+  <p><b>3.</b> 친구가 말합니다. <i>"펭귄이 <code>Bird</code>를 상속하지 않으면, 펭귄은 새가 아니게 되잖아."</i> 한 문장으로 반박하세요.</p>
+  <textarea data-k="x3"></textarea>
+
+  <p><b>4.</b> <span class="q-level debate">논쟁적</span> 또 다른 친구가 말합니다. <i>"ISP를 지키려면 모든 메서드를 하나씩 따로 Protocol로 만들면 되지."</i> 동의하나요? 오늘 나눈 기준으로 답하세요.</p>
+  <textarea data-k="x4"></textarea>
+
+  <p><b>5. 자기 점검.</b> 약속 3칸 표(받는 조건 / 끝난 뒤 보장 / 항상 참)를 새로운 클래스에 대해 혼자 쓸 수 있다.</p>
+  <div class="scale">
+    <label><input type="radio" name="x5" data-k="x5-1"> 1 아직 어렵다</label>
+    <label><input type="radio" name="x5" data-k="x5-2"> 2 도움을 받으면</label>
+    <label><input type="radio" name="x5" data-k="x5-3"> 3 대체로 혼자</label>
+    <label><input type="radio" name="x5" data-k="x5-4"> 4 친구에게 설명할 수 있다</label>
+  </div>
+
+  <p><b>6. 사전 생각 다시 보기.</b> 활동 2-1에서 고른 동의 정도를 다시 고르고, 생각이 바뀌었다면(또는 그대로라면) 그 까닭을 쓰세요. <i>"상속했다면 부모 자리에 넣어도 항상 괜찮다."</i></p>
+  <div class="scale">
+    <label><input type="radio" name="post-agree" data-k="post-agree-1"> 1 전혀 아니다</label>
+    <label><input type="radio" name="post-agree" data-k="post-agree-2"> 2 아닌 편</label>
+    <label><input type="radio" name="post-agree" data-k="post-agree-3"> 3 그런 편</label>
+    <label><input type="radio" name="post-agree" data-k="post-agree-4"> 4 매우 그렇다</label>
+  </div>
+  <textarea data-k="x6"></textarea>
+</section>
+
+</main>
+<nav class="pager">
+  <a href="session_1.html">← 1차시: 변경(Change)</a>
+  <a href="session_3.html">3차시: 의존(Dependency) →</a>
+</nav>
+</body>
+</html>

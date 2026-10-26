@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06. 종합: 도서관 대출 시스템</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top">
+  <nav>
+    <a href="index.html">목차</a>
+    <a href="chapter_05_dip.html">← 05. DIP</a>
+    <a href="final_check.html">종합 진단표 →</a>
+  </nav>
+  <h1>06. 종합: 도서관 대출 시스템</h1>
+  <p class="lead">다섯 원칙을 한 도메인에 함께 적용하고, 어디서 멈춰야 하는지까지 판단하기</p>
+</header>
+<main>
+
+<section id="goals">
+  <h2>학습목표</h2>
+  <ol>
+    <li>하나의 도메인 코드에서 SRP·OCP·LSP·ISP·DIP 위반 지점을 찾아 해당 원칙 이름과 연결할 수 있다.</li>
+    <li>5원칙을 적용한 구조에서 새 요구(회원 유형 추가, 알림 수단 교체)가 어떤 클래스 추가·수정으로 흡수되는지 설명할 수 있다.</li>
+    <li>YAGNI에 비추어 추상화를 지금 추가할지 미룰지 판단할 수 있다.</li>
+  </ol>
+</section>
+
+<section id="concept">
+  <h2>개념</h2>
+  <p>지금까지 원칙을 하나씩 따로 배웠지만, 실제 코드에서 다섯 원칙은 <b>서로 맞물려</b> 작동합니다.</p>
+  <table>
+    <tr><th>원칙</th><th>한 문장</th><th>이 장에서 답하는 질문</th></tr>
+    <tr><td>SRP (1장)</td><td>클래스의 변경 이유는 하나</td><td>영수증 양식이 바뀌면 대출 규칙 코드도 열어야 하나?</td></tr>
+    <tr><td>OCP (2장)</td><td>확장에 열리고 수정에 닫힘</td><td>회원 유형이 늘면 기존 코드를 고쳐야 하나?</td></tr>
+    <tr><td>LSP (3장)</td><td>하위 타입은 상위 타입의 계약을 지킴</td><td>새 정책 클래스가 서비스의 기대를 깨지 않나?</td></tr>
+    <tr><td>ISP (4장)</td><td>클라이언트별 작은 인터페이스</td><td>서비스가 쓰지도 않는 메서드에 의존하나?</td></tr>
+    <tr><td>DIP (5장)</td><td>고수준·저수준 모두 추상에 의존</td><td>저장소·알림을 바꾸거나 가짜로 테스트할 수 있나?</td></tr>
+  </table>
+  <p>그리고 마지막으로 꼭 필요한 브레이크가 하나 있습니다.</p>
+  <aside class="box concept">
+    <h4>📦 새 개념: YAGNI (You Aren't Gonna Need It)</h4>
+    <ul>
+      <li><b>정의</b>: "지금 필요하지 않은 기능·추상화는 만들지 않는다." 실제 요구가 생겼을 때 추가한다.</li>
+      <li><b>왜 필요?</b>: SOLID를 기계적으로 적용하면 바뀔 일이 없는 곳에도 인터페이스·팩토리·설정 로더가 쌓여 코드를 읽기 어렵게 만든다(과잉 설계). 미래 예측은 자주 틀리고, 틀린 추상은 없는 추상보다 고치기 어렵다.</li>
+      <li><b>예</b>: "나중에 DB를 바꿀지도 모르니" 지금 다중 DB 어댑터를 만들지 않는다. 대신 바꾸기 쉬운 구조(DIP)만 유지하고, 실제로 DB가 필요해지면 그때 구현 하나를 추가한다.</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>📦 새 개념: 팩토리 (Factory)</h4>
+    <ul>
+      <li><b>정의</b>: 조건(설정값, 회원 유형 등)을 보고 어떤 구현 객체를 만들지 결정해 돌려주는 함수나 클래스</li>
+      <li><b>왜 필요?</b>: 객체를 고르는 <code>if</code>를 한 곳에 모아, 쓰는 쪽은 구체 클래스 이름을 몰라도 되게 하려고. 단, 고를 구현이 하나뿐이면 군더더기다</li>
+      <li><b>예</b>: <code>def make_notifier(kind: str) -&gt; Notifier: return SmsNotifier() if kind == "sms" else EmailNotifier()</code></li>
+    </ul>
+  </aside>
+  <aside class="box tip">
+    <h4>💡 핵심 포인트: SOLID와 YAGNI는 충돌하지 않는다</h4>
+    <p>SOLID는 "<b>이미 반복되고 있는 변경</b>을 싸게 만드는 방법", YAGNI는 "<b>아직 오지 않은 변경</b>에 미리 돈을 쓰지 말라"는 경고입니다. 변경이 두 번째로 찾아왔을 때 원칙을 적용해도 대부분 늦지 않습니다.</p>
+  </aside>
+</section>
+
+<section id="situation">
+  <h2>상황</h2>
+  <div class="situation">
+    <p>학교 도서관 대출 프로그램. 처음엔 학생(3권/14일)과 교사(10권/30일)만 있었고, 한 클래스 <code>BeforeLibrary</code>가 대출 규칙 판단, 기록 저장, 이메일 알림, 영수증 출력을 모두 처리했습니다.</p>
+    <p>새 학기가 되자 요구가 몰려옵니다.</p>
+    <ul>
+      <li>"<b>졸업생</b>도 1권, 7일까지 빌릴 수 있게 해 주세요." (회원 유형 추가)</li>
+      <li>"영수증에 책 ID 말고 <b>책 제목</b>을 찍어 주세요." (출력 양식 변경)</li>
+      <li>"알림 로직 테스트할 때 <b>진짜 메일이 나가지 않게</b> 해 주세요." (알림 교체/테스트)</li>
+    </ul>
+    <p>세 요구 모두 서로 다른 이유인데, 고칠 곳은 전부 <code>checkout</code> 메서드 하나입니다.</p>
+  </div>
+</section>
+
+<section id="bad">
+  <h2>5원칙 적용 전</h2>
+  <p>동작은 합니다. 하지만 <code>[문제 N]</code> 주석마다 어떤 원칙이 깨졌는지 붙여 두었습니다.</p>
+<pre><code class="bad">"""
+6장. 종합: 도서관 대출 시스템에 SOLID 5원칙 함께 적용하기
+
+목적:
+    하나의 도메인(학교 도서관 대출)에서 SRP·OCP·LSP·ISP·DIP가 각각 어디에 쓰이는지,
+    그리고 '어디까지만' 적용해야 하는지(YAGNI, 과잉 설계 경계)를 함께 보여 준다.
+
+구성:
+    1) 5원칙 적용 전: 모든 일을 혼자 하는 BeforeLibrary
+    2) 5원칙 적용 후: 역할별로 나뉜 작은 클래스들 + 조립 지점(build_library)
+
+실행 방법:
+    python3 code/chapter_06_summary.py
+"""
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import date, timedelta
+from typing import Protocol
+
+
+# =====================================================================
+# 5원칙 적용 전: 한 클래스가 규칙·저장·알림·출력을 모두 떠안는다
+# =====================================================================
+
+class BeforeLibrary:
+    def __init__(self) -&gt; None:
+        self.books: dict[str, str] = {"B1": "파이썬 입문", "B2": "객체지향의 사실과 오해"}
+        self.loans: list[tuple[str, str, date]] = []  # (회원ID, 책ID, 반납 예정일)
+
+    def checkout(self, member_id: str, member_type: str, book_id: str, today: date) -&gt; None:
+        # [문제 1: SRP 위반] 대출 규칙, 저장, 알림, 영수증 출력이 한 메서드에 섞여 있다.
+        #   → 영수증 양식이 바뀌어도, 알림 수단이 바뀌어도, 대출 규칙이 바뀌어도 이 메서드를 연다.
+
+        # [문제 2: OCP 위반] 회원 유형이 늘 때마다(졸업생, 외부인...) elif를 추가해야 한다.
+        if member_type == "student":
+            limit, days = 3, 14
+        elif member_type == "teacher":
+            limit, days = 10, 30
+        else:
+            raise ValueError("알 수 없는 회원 유형")
+
+        current = sum(1 for m, _, _ in self.loans if m == member_id)
+        if current &gt;= limit:
+            print(f"[거절] {member_id}: 대출 한도({limit}권) 초과")
+            return
+
+        due = today + timedelta(days=days)
+        # [문제 3: DIP 위반] 저장소(내부 리스트)와 알림(print로 흉내 낸 이메일)에 직접 묶여 있다.
+        #   → DB로 바꾸거나 SMS로 바꾸려면 업무 규칙 코드를 고쳐야 하고, 테스트용 가짜도 못 넣는다.
+        self.loans.append((member_id, book_id, due))
+        print(f"[EMAIL] {member_id}님, '{self.books[book_id]}' 반납일은 {due}입니다.")
+        print(f"[영수증] {member_id} | {book_id} | ~{due}")</code></pre>
+  <ul>
+    <li><b>[문제 1] SRP</b>: 규칙·저장·알림·출력이라는 서로 다른 변경 이유가 한 메서드에 모여 있습니다.</li>
+    <li><b>[문제 2] OCP</b>: 회원 유형이 늘 때마다 <code>elif</code>를 추가해야 합니다. 실제로 졸업생 요구가 오자 <code>ValueError</code>가 납니다.</li>
+    <li><b>[문제 3] DIP</b>: 저장소와 알림이 구현(리스트, <code>print</code> 이메일)에 직접 묶여 교체·테스트가 불가능합니다.</li>
+  </ul>
+  <p>LSP와 ISP 위반은 이 코드에 직접 보이지 않습니다. 애초에 상속도 인터페이스도 없기 때문입니다. 두 원칙은 구조를 나누기 <em>시작한 뒤</em> "나눈 조각들이 올바르게 맞물리는가"를 점검하는 원칙이라는 점을 기억하세요.</p>
+</section>
+
+<section id="good">
+  <h2>5원칙 적용 후</h2>
+  <p>원칙마다 <code>[해결 N]</code> 표시를 따라가 보세요.</p>
+<pre><code class="good"># =====================================================================
+# 5원칙 적용 후
+# =====================================================================
+
+@dataclass(frozen=True)
+class Book:
+    book_id: str
+    title: str
+
+
+@dataclass(frozen=True)
+class Loan:
+    member_id: str
+    book: Book
+    due: date
+
+
+# ---------------------------------------------------------------------
+# [해결 2: OCP] + [해결 3: LSP] 회원 유형별 대출 정책
+# ---------------------------------------------------------------------
+class LoanPolicy(ABC):
+    """대출 정책의 '계약'.
+
+    계약(모든 하위 클래스가 지켜야 함):
+      - max_books()는 1 이상의 정수를 돌려준다.
+      - loan_days()는 1 이상의 정수를 돌려준다.
+      - 예외를 던져 '대출 자체를 막는' 방식으로 계약을 바꾸지 않는다.
+    → LoanService는 어떤 하위 정책이 오든 이 계약만 믿고 동작한다(치환 가능성, LSP).
+    """
+
+    @abstractmethod
+    def max_books(self) -&gt; int: ...
+
+    @abstractmethod
+    def loan_days(self) -&gt; int: ...
+
+
+class StudentPolicy(LoanPolicy):
+    def max_books(self) -&gt; int:
+        return 3
+
+    def loan_days(self) -&gt; int:
+        return 14
+
+
+class TeacherPolicy(LoanPolicy):
+    def max_books(self) -&gt; int:
+        return 10
+
+    def loan_days(self) -&gt; int:
+        return 30
+
+
+class GraduatePolicy(LoanPolicy):
+    """요구 변경 '졸업생도 1권, 7일 대출 허용': 새 클래스 추가만으로 흡수(OCP).
+
+    [LSP 주의] '졸업생은 대출 불가'를 표현하려고 max_books()에서 예외를 던지면
+    부모 계약을 깨는 것이다. 그런 요구라면 정책이 아니라 회원 자격 검사에서 다뤄야 한다.
+    """
+
+    def max_books(self) -&gt; int:
+        return 1
+
+    def loan_days(self) -&gt; int:
+        return 7
+
+
+# ---------------------------------------------------------------------
+# [해결 4: ISP] 클라이언트가 필요한 만큼만 아는 작은 인터페이스(Protocol)
+# ---------------------------------------------------------------------
+class BookFinder(Protocol):
+    def find(self, book_id: str) -&gt; Book: ...
+
+
+class LoanRecorder(Protocol):
+    def add(self, loan: Loan) -&gt; None: ...
+    def count_by_member(self, member_id: str) -&gt; int: ...
+
+
+class Notifier(Protocol):
+    def notify(self, member_id: str, message: str) -&gt; None: ...
+
+
+# ---------------------------------------------------------------------
+# 저수준 구현들 (세부 사항)
+# ---------------------------------------------------------------------
+class InMemoryCatalog:
+    """BookFinder를 '구조적으로' 만족한다(상속 없이 find 메서드만 있으면 됨)."""
+
+    def __init__(self, books: list[Book]) -&gt; None:
+        self._books = {b.book_id: b for b in books}
+
+    def find(self, book_id: str) -&gt; Book:
+        return self._books[book_id]
+
+
+@dataclass
+class InMemoryLoans:
+    """LoanRecorder를 만족한다. 나중에 DB 버전이 필요해지면 그때 같은 모양으로 하나 더 만든다."""
+
+    loans: list[Loan] = field(default_factory=list)
+
+    def add(self, loan: Loan) -&gt; None:
+        self.loans.append(loan)
+
+    def count_by_member(self, member_id: str) -&gt; int:
+        return sum(1 for loan in self.loans if loan.member_id == member_id)
+
+
+class ConsoleEmailNotifier:
+    def notify(self, member_id: str, message: str) -&gt; None:
+        print(f"[EMAIL] {member_id}님, {message}")
+
+
+class FakeNotifier:
+    """테스트용: 실제로 보내지 않고 기록만 남긴다(DIP 덕분에 끼울 수 있음)."""
+
+    def __init__(self) -&gt; None:
+        self.messages: list[str] = []
+
+    def notify(self, member_id: str, message: str) -&gt; None:
+        self.messages.append(f"{member_id}:{message}")
+
+
+# ---------------------------------------------------------------------
+# [해결 1: SRP] 변경 이유별로 나눈 클래스
+# ---------------------------------------------------------------------
+class ReceiptFormatter:
+    """변경 이유: '영수증 양식'이 바뀔 때만."""
+
+    def format(self, loan: Loan) -&gt; str:
+        return f"[영수증] {loan.member_id} | {loan.book.title} | ~{loan.due}"
+
+
+class LoanService:
+    """변경 이유: '대출 업무 규칙'이 바뀔 때만.
+
+    [해결 5: DIP] 저장소·알림·정책을 직접 만들지 않고 추상(Protocol/ABC)으로 주입받는다.
+    → 이 클래스 안에는 InMemory..., ConsoleEmail... 같은 구현 이름이 한 번도 나오지 않는다.
+    """
+
+    def __init__(self, finder: BookFinder, recorder: LoanRecorder, notifier: Notifier) -&gt; None:
+        self.finder = finder
+        self.recorder = recorder
+        self.notifier = notifier
+
+    def checkout(self, member_id: str, policy: LoanPolicy, book_id: str, today: date) -&gt; Loan | None:
+        if self.recorder.count_by_member(member_id) &gt;= policy.max_books():
+            print(f"[거절] {member_id}: 대출 한도({policy.max_books()}권) 초과")
+            return None
+        book = self.finder.find(book_id)
+        loan = Loan(member_id, book, today + timedelta(days=policy.loan_days()))
+        self.recorder.add(loan)
+        self.notifier.notify(member_id, f"'{book.title}' 반납일은 {loan.due}입니다.")
+        return loan
+
+
+# [YAGNI] 일부러 만들지 않은 것들:
+#   - 결제 플러그인 인터페이스, 다중 DB 어댑터, 정책을 읽는 설정 파일 로더 ...
+#   지금 요구사항에 없고 변경이 반복된 적도 없다. 실제로 필요해지는 순간 위 구조에
+#   클래스 하나를 더하는 것으로 충분하므로, 미리 추상화 층을 쌓지 않는다.
+
+
+def build_library(notifier: Notifier) -&gt; LoanService:
+    """조립 지점(Composition Root): 어떤 구현을 쓸지는 여기 한 곳에서만 정한다."""
+    catalog = InMemoryCatalog([Book("B1", "파이썬 입문"), Book("B2", "객체지향의 사실과 오해")])
+    return LoanService(catalog, InMemoryLoans(), notifier)
+
+
+if __name__ == "__main__":
+    today = date(2026, 3, 2)
+
+    print("=== 5원칙 적용 전 ===")
+    before = BeforeLibrary()
+    before.checkout("s01", "student", "B1", today)
+    try:
+        before.checkout("g01", "graduate", "B2", today)
+    except ValueError as e:
+        print(f"[오류] 졸업생 대출 불가 → 코드를 열어 elif 추가 필요 ({e})")
+
+    print("\n=== 5원칙 적용 후 ===")
+    service = build_library(ConsoleEmailNotifier())
+    formatter = ReceiptFormatter()
+    for member, policy, book in [
+        ("s01", StudentPolicy(), "B1"),
+        ("t01", TeacherPolicy(), "B2"),
+        ("g01", GraduatePolicy(), "B1"),   # 새 정책: 기존 코드 수정 없이 추가
+        ("g01", GraduatePolicy(), "B2"),   # 한도 1권 → 거절
+    ]:
+        loan = service.checkout(member, policy, book, today)
+        if loan:
+            print(formatter.format(loan))
+
+    print("\n=== 가짜 알림으로 테스트 ===")
+    fake = FakeNotifier()
+    build_library(fake).checkout("s02", StudentPolicy(), "B2", today)
+    assert fake.messages == ["s02:'객체지향의 사실과 오해' 반납일은 2026-03-16입니다."]
+    print(f"기록된 알림: {fake.messages}")
+    print("테스트 통과")</code></pre>
+  <p>실행 결과(<code>python3 code/chapter_06_summary.py</code>):</p>
+  <pre><code>=== 5원칙 적용 전 ===
+[EMAIL] s01님, '파이썬 입문' 반납일은 2026-03-16입니다.
+[영수증] s01 | B1 | ~2026-03-16
+[오류] 졸업생 대출 불가 → 코드를 열어 elif 추가 필요 (알 수 없는 회원 유형)
+
+=== 5원칙 적용 후 ===
+[EMAIL] s01님, '파이썬 입문' 반납일은 2026-03-16입니다.
+[영수증] s01 | 파이썬 입문 | ~2026-03-16
+[EMAIL] t01님, '객체지향의 사실과 오해' 반납일은 2026-04-01입니다.
+[영수증] t01 | 객체지향의 사실과 오해 | ~2026-04-01
+[EMAIL] g01님, '파이썬 입문' 반납일은 2026-03-09입니다.
+[영수증] g01 | 파이썬 입문 | ~2026-03-09
+[거절] g01: 대출 한도(1권) 초과
+
+=== 가짜 알림으로 테스트 ===
+기록된 알림: ["s02:'객체지향의 사실과 오해' 반납일은 2026-03-16입니다."]
+테스트 통과</code></pre>
+
+  <h3>원칙별로 어디에 적용됐나</h3>
+  <table>
+    <tr><th>원칙</th><th>적용 위치</th><th>흡수하는 변경</th></tr>
+    <tr><td>[해결 1] SRP</td><td><code>LoanService</code>(대출 규칙) / <code>ReceiptFormatter</code>(영수증)</td><td>영수증에 책 제목 찍기 → <code>ReceiptFormatter</code>만 수정</td></tr>
+    <tr><td>[해결 2] OCP</td><td><code>LoanPolicy</code> + <code>StudentPolicy</code>, <code>TeacherPolicy</code></td><td>졸업생 추가 → <code>GraduatePolicy</code> 클래스 <b>추가</b>, 기존 코드 무수정</td></tr>
+    <tr><td>[해결 3] LSP</td><td><code>LoanPolicy</code> docstring의 계약(1 이상 반환, 예외 금지)</td><td>어떤 정책이 와도 <code>LoanService</code>가 분기 없이 동작</td></tr>
+    <tr><td>[해결 4] ISP</td><td><code>BookFinder</code>, <code>LoanRecorder</code>, <code>Notifier</code> 작은 Protocol</td><td>서비스는 자기가 쓰는 메서드만 앎 → 저장소에 관리용 메서드가 늘어도 영향 없음</td></tr>
+    <tr><td>[해결 5] DIP</td><td><code>LoanService.__init__</code> 주입 + <code>build_library</code> 조립 지점</td><td>메일 대신 가짜 알림 → <code>FakeNotifier</code> 주입, <code>LoanService</code> 무수정</td></tr>
+  </table>
+
+  <aside class="box warn">
+    <h4>⚠️ 흔한 오해: "LSP를 지키려면 상속을 피해야 한다"</h4>
+    <p>상속 자체가 문제가 아니라 <b>계약을 깨는 하위 타입</b>이 문제입니다. 만약 "졸업생은 대출 불가"를 구현하려고 <code>GraduatePolicy.max_books()</code>에서 예외를 던지면, <code>LoanService</code>가 정책 종류를 확인하는 <code>if isinstance(...)</code>를 다시 들여야 합니다. 그 순간 OCP도 함께 무너집니다. 원칙들이 맞물려 있다는 좋은 예입니다.</p>
+  </aside>
+
+  <h3>그리고 일부러 하지 않은 것 (YAGNI)</h3>
+  <p>코드 하단 <code># [YAGNI]</code> 주석을 보세요. 결제 플러그인, 다중 DB 어댑터, 정책 설정 파일 로더는 만들지 않았습니다. 요구도 없고 변경이 반복된 적도 없기 때문입니다. 필요해지면 지금 구조에 클래스 하나를 더하면 됩니다.</p>
+  <p>반대로 <code>Book</code>, <code>Loan</code> 같은 단순 데이터 클래스나 <code>ReceiptFormatter</code>에는 추상 클래스를 만들지 않았습니다. 구현이 하나뿐이고 교체할 이유가 없기 때문입니다.</p>
+  <p>실행: <code>python3 code/chapter_06_summary.py</code></p>
+</section>
+
+<section id="summary">
+  <h2>정리</h2>
+  <table>
+    <tr><th>요구 변경</th><th>적용 전: 수정할 곳</th><th>적용 후: 수정할 곳</th></tr>
+    <tr><td>졸업생 회원 유형</td><td><code>checkout</code>에 elif 추가</td><td><code>GraduatePolicy</code> 추가</td></tr>
+    <tr><td>영수증 양식</td><td><code>checkout</code> 안 print 수정</td><td><code>ReceiptFormatter</code>만</td></tr>
+    <tr><td>알림 교체·테스트</td><td><code>checkout</code> 수정, 테스트 불가</td><td>새 <code>Notifier</code> 구현 + <code>build_library</code></td></tr>
+  </table>
+  <aside class="box warn">
+    <h4>⚠️ 과잉 설계 경계: 이런 신호가 보이면 멈추세요</h4>
+    <ul>
+      <li>구현이 하나뿐인 추상 클래스가 여러 개이고, 바뀐 적도 바뀔 계획도 없다.</li>
+      <li>기능 하나를 따라가려면 파일 다섯 개를 열어야 하는데, 그 대가로 얻은 교체 가능성이 한 번도 쓰이지 않았다.</li>
+      <li>"나중에 혹시"가 설계 이유의 전부다.</li>
+    </ul>
+    <p>판단 기준: <b>같은 이유의 변경이 실제로 두 번째 찾아왔는가?</b> 외부 자원 경계(DB, 네트워크, 시간)처럼 테스트를 위해 대체가 꼭 필요한 곳은 예외적으로 처음부터 추상을 둘 만합니다.</p>
+  </aside>
+  <p>다 읽었다면 <a href="final_check.html">종합 진단표</a>로 자신의 이해 수준을 점검해 보세요.</p>
+</section>
+
+<section class="quiz">
+  <h2>이해 점검</h2>
+
+  <div class="q" data-type="choice" data-answer="2">
+    <h4>Q1. [개념 확인] (학습목표 1)</h4>
+    <p><code>BeforeLibrary.checkout</code>의 <code>if member_type == "student": ... elif member_type == "teacher": ...</code> 분기가 <b>가장 직접적으로</b> 위반하는 원칙은?</p>
+    <ol class="options"><li>SRP</li><li>OCP</li><li>LSP</li><li>ISP</li></ol>
+    <div class="explain"><b>정답: 2 (OCP)</b><br>새 회원 유형이 올 때마다 기존 메서드를 수정해야 하므로 "수정에 닫혀 있지" 않습니다.<br>
+    <b>왜 오답이 매력적인가</b>: 1(SRP)도 메서드 전체로 보면 위반이지만, 그것은 규칙·저장·알림·출력이 섞인 문제이지 이 분기 자체의 문제는 아닙니다. 3(LSP)은 "회원 유형=타입"이라 떠올리기 쉽지만 여기엔 상속 계층이 없어 치환할 하위 타입도 없습니다.</div>
+  </div>
+
+  <div class="q" data-type="ox" data-answer="2">
+    <h4>Q2. [개념 확인] (학습목표 3)</h4>
+    <p>YAGNI는 "추상 클래스나 인터페이스를 쓰지 말라"는 뜻이므로 SOLID와 정면으로 충돌한다. (O/X)</p>
+    <ol class="options"><li>O</li><li>X</li></ol>
+    <div class="explain"><b>정답: X</b><br>YAGNI는 "<em>지금 필요 없는</em> 것을 미리 만들지 말라"는 뜻입니다. 이미 반복되는 변경(회원 유형 추가)이나 테스트에 필요한 외부 경계(알림)에 추상을 두는 것은 YAGNI와 충돌하지 않습니다.<br>
+    <b>왜 오답이 매력적인가</b>: 두 개념이 "추상을 늘려라 vs 줄여라"처럼 정반대로 들리기 때문입니다. 실제로는 "언제" 추상을 만들지에 대한 서로 보완적인 기준입니다.</div>
+  </div>
+
+  <div class="q" data-type="choice" data-answer="3">
+    <h4>Q3. [위반 찾기] (학습목표 1)</h4>
+    <p>누군가 아래 정책을 추가했습니다. 이 코드가 깨뜨리는 원칙은?</p>
+<pre><code>class SuspendedPolicy(LoanPolicy):
+    def max_books(self) -&gt; int:
+        raise PermissionError("정지 회원은 대출 불가")
+
+    def loan_days(self) -&gt; int:
+        return 0</code></pre>
+    <ol class="options"><li>SRP</li><li>ISP</li><li>LSP</li><li>DIP</li></ol>
+    <div class="explain"><b>정답: 3 (LSP)</b><br><code>LoanPolicy</code>의 계약은 "1 이상의 정수를 반환, 예외로 대출을 막지 않음"입니다. 이 하위 타입은 계약을 두 번 깨뜨립니다. (1) <code>max_books()</code>가 정수 대신 <code>PermissionError</code>를 던져 "예외로 대출을 막지 않는다"는 약속을 깨고, (2) <code>loan_days()</code>가 0을 반환해 "1 이상"이라는 <b>사후조건</b>을 약화합니다. 둘 중 하나만 있어도 부모 자리에 넣었을 때 <code>LoanService</code>가 깨집니다.<br>
+    <b>왜 오답이 매력적인가</b>: 4(DIP)는 <code>LoanPolicy</code>라는 추상을 상속했으니 문제없어 보이게 만듭니다. 추상에 의존하는 것과 그 추상의 계약을 지키는 것은 별개입니다. 정지 회원 처리는 정책이 아니라 대출 전 자격 검사(별도 책임)로 다루는 편이 맞습니다.</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q4. [위반 찾기] (학습목표 1)</h4>
+    <p>저장소 Protocol을 아래처럼 하나로 합치자는 제안이 나왔습니다. <code>LoanService</code> 입장에서 어떤 원칙 문제가 생기는지, 그리고 테스트용 가짜를 만들 때 어떤 불편이 생기는지 설명하세요.</p>
+<pre><code>class LibraryStore(Protocol):
+    def find(self, book_id: str) -&gt; Book: ...
+    def add(self, loan: Loan) -&gt; None: ...
+    def count_by_member(self, member_id: str) -&gt; int: ...
+    def delete_all_loans(self) -&gt; None: ...
+    def export_csv(self, path: str) -&gt; None: ...
+    def backup_to_cloud(self) -&gt; None: ...</code></pre>
+    <div class="explain"><b>모범 답안</b><br><b>ISP 위반</b>: <code>LoanService</code>는 <code>find</code>, <code>add</code>, <code>count_by_member</code>만 쓰는데, 관리자용 <code>delete_all_loans</code>·<code>export_csv</code>·<code>backup_to_cloud</code>까지 아는 인터페이스에 의존하게 됩니다(인터페이스 오염). 백업 방식이 바뀌어 시그니처가 변하면 대출 서비스와 무관한데도 영향을 받습니다.<br>
+    <b>테스트 불편</b>: 가짜 저장소를 만들 때 쓰지도 않는 메서드 세 개를 빈 구현으로 채워야 합니다.<br>
+    <b>흔한 함정</b>: "구현 클래스 하나가 다 해 주니 편하다"는 이유로 합치기 쉽습니다. 구현은 하나여도 되지만(<code>InMemoryCatalog</code>와 <code>InMemoryLoans</code>를 한 클래스로 합쳐도 무방), <em>클라이언트가 보는 인터페이스</em>는 작게 나눠야 합니다.</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q5. [리팩터링 실습] (학습목표 2)</h4>
+    <p>새 요구: "반납일 알림을 이메일 대신 <b>카카오톡</b>으로 보내 주세요." 5원칙 적용 후 코드에서 (a) 새로 추가할 클래스와 메서드, (b) 수정할 곳, (c) 절대 수정하지 않아도 되는 클래스를 적고, (a)를 코드로 작성하세요.</p>
+    <div class="explain"><b>모범 답안</b>
+<pre><code>class KakaoNotifier:
+    def notify(self, member_id: str, message: str) -&gt; None:
+        print(f"[KAKAO] {member_id}님, {message}")
+
+# (b) 조립 지점만 수정
+service = build_library(KakaoNotifier())</code></pre>
+    (a) <code>notify(member_id, message)</code>를 가진 <code>KakaoNotifier</code> — <code>Notifier</code>는 Protocol이므로 상속 없이 메서드 모양만 맞추면 됩니다.<br>
+    (b) <code>build_library(...)</code>를 호출하는 조립 지점(<code>__main__</code>).<br>
+    (c) <code>LoanService</code>, <code>LoanPolicy</code> 계열, <code>ReceiptFormatter</code>.<br>
+    <b>채점 포인트</b>: <code>LoanService</code> 안에 <code>if channel == "kakao"</code>를 넣었다면 OCP·DIP를 다시 깬 것입니다.</div>
+  </div>
+
+  <div class="q" data-type="open">
+    <h4>Q6. [서술형] (학습목표 3)</h4>
+    <p>팀원이 말합니다. "나중에 MySQL이나 MongoDB로 바꿀지도 모르니까, 지금 <code>DatabaseAdapterFactory</code>, 설정 파일로 DB 종류를 고르는 <code>ConfigLoader</code>, 플러그인 등록 시스템까지 다 만들어 두죠." 지금 도서관 시스템(메모리 저장소만 사용, DB 도입 계획 없음) 기준으로 당신의 판단과 이유를 쓰세요.</p>
+    <div class="explain"><b>모범 답안</b><br>지금은 만들지 않습니다(YAGNI). 이미 <code>LoanService</code>가 <code>LoanRecorder</code> Protocol에 의존(DIP)하므로, 실제로 DB가 필요해지면 <code>MySqlLoans</code> 클래스 하나를 추가하고 <code>build_library</code>만 바꾸면 됩니다. 팩토리·설정 로더·플러그인은 요구도, 반복된 변경도 없는 추측에 기반한 비용이며, 어떤 DB를 쓸지 모르는 상태에서 만든 추상은 실제 요구와 어긋날 가능성이 큽니다.<br>
+    <b>왜 "다 만들자"가 매력적인가</b>: SOLID를 배운 직후라 "확장성 = 좋은 설계"로 느껴지기 때문입니다. 좋은 설계는 <em>바꾸기 쉬운</em> 설계이지, <em>미리 다 바꿔 둔</em> 설계가 아닙니다.</div>
+  </div>
+</section>
+
+</main>
+<nav class="pager">
+  <a href="chapter_05_dip.html">← 05. DIP 의존 역전 원칙</a>
+  <a href="final_check.html">종합 진단표 →</a>
+</nav>
+<script src="assets/quiz.js"></script>
+<script src="assets/pyrunner.js"></script>
+</body>
+</html>

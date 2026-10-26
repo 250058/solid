@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3차시 의존 탐구 학습지</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/worksheet.css">
+</head>
+<body>
+<header class="top">
+  <nav>
+    <a href="../index.html">목차</a>
+    <a href="session_1.html">1차시 학습지</a>
+    <a href="session_2.html">← 2차시 학습지</a>
+  </nav>
+  <h1>3차시. 누가 누구를 알고 있는가: 의존(Dependency)</h1>
+  <p class="lead">의존 화살표 따라가기 + 종합 설계 프로젝트 · 한입카페 알림 → 학교 도서관 → 기상 관측소</p>
+  <div class="ws-meta">
+    <span>개념적 렌즈: 의존</span>
+    <span>47분</span>
+    <span>활동 3-1 ~ 3-7</span>
+    <span>준비: Python 3.12+, 시작 코드 4개 <a href="../index.html#run">(내려받기)</a></span>
+  </div>
+</header>
+<main>
+
+<div class="ws-id">
+  <div><label for="id-name">이름</label><input id="id-name" type="text" data-k="id-name"></div>
+  <div><label for="id-num">학번</label><input id="id-num" type="text" data-k="id-num"></div>
+  <div><label for="id-team">모둠</label><input id="id-team" type="text" data-k="id-team"></div>
+  <div><label for="id-date">날짜</label><input id="id-date" type="text" data-k="id-date"></div>
+</div>
+
+<section id="goals">
+  <h2>오늘의 학습목표</h2>
+  <ul>
+    <li><b>목표 3-a</b> 클래스 사이의 의존 화살표를 그리고, 업무 규칙을 정하는 코드가 구체 구현(수단)을 직접 만들고 부르는 지점을 찾아 의존 방향을 바꿀 수 있다.</li>
+    <li><b>목표 3-b</b> 한 시스템에 요구 변경이 들어왔을 때 1~3차시에 배운 원칙 중 무엇을 적용할지 근거를 들어 고르고 설계안을 만들 수 있다.</li>
+    <li><b>목표 3-c</b> 두 설계안을 비교해 과잉 설계인지 판단하고, 원칙을 적용하지 않기로 한 이유를 설명할 수 있다.</li>
+  </ul>
+</section>
+
+<div class="lens">
+  <b>개념적 렌즈: 의존(Dependency)</b><br>
+  누가 누구를 알고 있는가? 화살표는 어느 방향인가? 한쪽이 바뀌면 변경이 어디까지 번지는가?
+</div>
+
+<section id="questions">
+  <h2>오늘의 탐구 질문</h2>
+  <p><span class="q-level fact">사실</span><code>OrderService</code>는 어떤 클래스를 직접 만들고 호출하는가? 카카오톡 알림으로 바꾸면 어디를 몇 줄 고치는가?</p>
+  <p><span class="q-level fact">사실</span>테스트에서 실제 메일을 보내지 않으려면 지금 코드로 가능한가?</p>
+  <p><span class="q-level concept">개념</span>화살표의 방향이 바뀐다는 것은 무슨 뜻인가? 왜 '역전'이라고 부를까? 구조를 바꾸는 원칙과, 객체를 넣어 주는 기법은 같은 것인가?</p>
+  <p><span class="q-level concept">개념</span>1~3차시에 만난 원칙들은 서로 어떻게 연결되는가?</p>
+  <p><span class="q-level debate">논쟁</span>바뀔 계획이 없는 부분에도 미리 추상을 만들어야 하는가? 원칙을 지키지 않는 것이 더 좋은 설계일 때가 있는가?</p>
+</section>
+
+<h2>1부. 조사: 알림 서비스의 의존 따라가기</h2>
+
+<!-- ============================================================= -->
+<section class="activity" data-type="predict" id="a3-1">
+  <h3>활동 3-1. 화살표 그리고 예측하기</h3>
+  <div class="tags"><span class="t-type">예측하기</span><span>4분</span><span>개인</span><span>목표 3-a</span></div>
+
+  <p><b>사전 생각</b> 지금 내 생각을 한 줄로 쓴다. (정답 없음, 마지막 활동에서 다시 본다)</p>
+  <p>"클래스 A가 클래스 B에 <u>의존한다</u>"는 말은 코드에서 무엇을 뜻한다고 생각하는가?</p>
+  <textarea data-k="3-1-pre" placeholder="지금 생각: "></textarea>
+
+  <div class="situation">
+    <b>상황</b> 한입카페(1차시)의 주문 완료 알림. 음료가 준비되면 <code>OrderService</code>가 고객에게 이메일을 보낸다.<br>
+    사장님: "손님들이 메일을 잘 안 봐요. <b>카카오톡 알림</b>으로 바꿉시다."<br>
+    개발자: "테스트를 돌릴 때마다 진짜 메일이 나가요. <b>가짜 발송기</b>로 시험하고 싶어요."
+  </div>
+
+  <p><code>code/s3_notifier.py</code>를 <b>실행하지 말고</b> 읽는다. 핵심 부분:</p>
+<pre><code>class EmailSender:
+    def send(self, to: str, msg: str) -&gt; None:
+        print(f"  [EMAIL -&gt; {to}] {msg}")
+
+
+class OrderService:
+    def __init__(self) -&gt; None:
+        self.completed: list[int] = []
+        self.sender = EmailSender()  # [A]
+
+    def complete_order(self, order_id: int, customer: str) -&gt; None:
+        self.completed.append(order_id)  # [B]
+        self.sender.send(customer, f"주문 {order_id}번 음료가 준비되었습니다.")  # [C]</code></pre>
+
+  <p><span class="q-level fact">사실</span> ① 의존 화살표를 그린다. <code>X ──▶ Y</code>는 "X의 코드 안에 Y의 이름이 나온다(X가 Y를 안다)"는 뜻으로 쓴다.</p>
+  <textarea class="tall" data-k="3-1-arrow" placeholder="클래스 이름과 화살표로 그리기"></textarea>
+
+  <p><span class="q-level fact">사실</span> ② 두 요구마다 고칠 곳을 예측한다.</p>
+  <table>
+    <tr><th>요구</th><th>고칠 클래스</th><th>고칠 위치([A]/[B]/[C])</th><th>고칠 줄 수 예측</th></tr>
+    <tr><td>카카오톡 알림으로 교체</td>
+      <td><input type="text" data-k="3-1-p1-class"></td>
+      <td><input type="text" data-k="3-1-p1-pos"></td>
+      <td><input type="text" data-k="3-1-p1-n"></td></tr>
+    <tr><td>테스트용 가짜 발송</td>
+      <td><input type="text" data-k="3-1-p2-class"></td>
+      <td><input type="text" data-k="3-1-p2-pos"></td>
+      <td><input type="text" data-k="3-1-p2-n"></td></tr>
+  </table>
+
+  <p><span class="q-level fact">사실</span> ③ 지금 코드 그대로, <code>OrderService</code>를 테스트하면서 실제 메일을 보내지 않을 수 있는가?</p>
+  <label class="check"><input type="radio" name="3-1-test" data-k="3-1-test-yes"> 가능하다</label>
+  <label class="check"><input type="radio" name="3-1-test" data-k="3-1-test-no"> 불가능하다</label>
+  <label class="check"><input type="radio" name="3-1-test" data-k="3-1-test-unsure"> 잘 모르겠다</label>
+  <textarea data-k="3-1-test-why" placeholder="그렇게 생각한 이유 한 줄"></textarea>
+</section>
+
+<!-- ============================================================= -->
+<section class="activity" data-type="code" id="a3-2">
+  <h3>활동 3-2. 짝 프로그래밍: 화살표 돌리기</h3>
+  <div class="tags"><span class="t-type">코드 직접 수정</span><span>9분</span><span>짝 (드라이버·내비게이터 교대)</span><span>목표 3-a</span></div>
+
+  <p><b>역할</b> 드라이버는 키보드를 잡고, 내비게이터는 TODO 설명과 점검 메시지를 읽어 주며 방향을 말한다. TODO 하나가 끝날 때마다 역할을 바꾼다.</p>
+  <table>
+    <tr><th>TODO</th><th>드라이버 이름</th><th>끝났나?</th></tr>
+    <tr><td>TODO 1: <code>MessageSender</code> 약속(Protocol) 정의</td><td><input type="text" data-k="3-2-d1"></td><td><input type="checkbox" data-k="3-2-c1"></td></tr>
+    <tr><td>TODO 2: <code>OrderService</code>가 생성자로 발송기를 받도록 수정</td><td><input type="text" data-k="3-2-d2"></td><td><input type="checkbox" data-k="3-2-c2"></td></tr>
+    <tr><td>TODO 3: <code>FakeSender</code>, <code>KakaoSender</code> 추가</td><td><input type="text" data-k="3-2-d3"></td><td><input type="checkbox" data-k="3-2-c3"></td></tr>
+  </table>
+
+  <p><b>1) 먼저 실행</b> <code>python3 s3_notifier.py</code> 를 실행해 점검 결과를 적는다.</p>
+  <table>
+    <tr><th></th><th>통과 수 (/5)</th><th>가장 먼저 해결할 [미완성] 메시지</th></tr>
+    <tr><td>수정 전</td><td><input type="text" data-k="3-2-before-n"></td><td><input type="text" data-k="3-2-before-msg"></td></tr>
+    <tr><td>수정 후</td><td><input type="text" data-k="3-2-after-n"></td><td><input type="text" data-k="3-2-after-msg" placeholder="남은 메시지가 있다면"></td></tr>
+  </table>
+
+  <details class="hint"><summary>힌트 1단계 (방향)</summary>
+    <p><code>OrderService</code>가 실제로 발송기에게 부탁하는 일은 몇 가지인가? 약속에는 그것만 담는다. 2차시의 <code>Protocol</code>을 떠올린다.</p>
+  </details>
+  <details class="hint"><summary>힌트 2단계 (구조)</summary>
+    <p>[A] 줄에서 "만들기"를 없애고, 만들어진 발송기를 <code>__init__</code>의 매개변수로 <b>받아서</b> 저장한다. 매개변수의 타입 힌트 자리에는 구체 클래스 이름 대신 TODO 1에서 만든 이름을 쓴다. <code>FakeSender</code>는 <code>send</code>가 불릴 때 출력 대신 리스트에 덧붙인다.</p>
+  </details>
+
+  <p><b>2) 관찰 기록</b></p>
+  <p><span class="q-level fact">사실</span> <code>KakaoSender</code>를 추가할 때 <code>OrderService</code>의 코드는 몇 줄 고쳤는가? 3-1의 예측과 비교한다.</p>
+  <input type="text" data-k="3-2-kakao-n" placeholder="실제 줄 수"> &nbsp; 예측과 <select data-k="3-2-kakao-cmp"><option value=""></option><option>같았다</option><option>달랐다</option></select>
+  <textarea data-k="3-2-kakao-why" placeholder="같거나 달랐던 이유"></textarea>
+
+  <p><span class="q-level fact">사실</span> 수정한 코드의 의존 화살표를 다시 그린다. <code>MessageSender</code>도 하나의 상자로 그린다.</p>
+  <textarea class="tall" data-k="3-2-arrow-after" placeholder="수정 후 화살표"></textarea>
+
+  <p><span class="q-level concept">개념</span> 3-1과 비교해 <code>EmailSender</code>에 닿는 화살표의 방향은 어떻게 바뀌었는가? 그런데 프로그램이 실행될 때 "누가 누구의 메서드를 부르는가"(호출 순서)도 바뀌었는가?</p>
+  <table>
+    <tr><th></th><th>수정 전</th><th>수정 후</th></tr>
+    <tr><td>코드 안에서 누가 누구의 이름을 아는가</td><td><input type="text" data-k="3-2-know-before"></td><td><input type="text" data-k="3-2-know-after"></td></tr>
+    <tr><td>실행할 때 누가 누구를 부르는가</td><td><input type="text" data-k="3-2-call-before"></td><td><input type="text" data-k="3-2-call-after"></td></tr>
+  </table>
+
+  <p><span class="q-level concept">개념</span> 그렇다면 <code>EmailSender()</code>를 만드는 코드는 지금 어디로 갔는가? 그 자리가 프로그램에서 하는 역할을 한 줄로 쓴다.</p>
+  <textarea data-k="3-2-where-create"></textarea>
+</section>
+
+<h2>2부. 일반화: 의존에 대한 나의 문장</h2>
+
+<!-- ============================================================= -->
+<section class="activity" data-type="generalize" id="a3-3">
+  <h3>활동 3-3. 의존을 넣어 원칙 문장 쓰기</h3>
+  <div class="tags"><span class="t-type">자기 말로 일반화</span><span>4분</span><span>개인 → 짝</span><span>목표 3-a</span></div>
+
+  <p><b>① 개인</b> 3-1, 3-2에서 겪은 일을 바탕으로, <b>"의존"</b>이라는 단어를 넣어 원칙 문장을 쓴다. 특정 클래스 이름(<code>OrderService</code> 등) 없이, 다른 프로그램에도 통하는 말로 쓴다.</p>
+  <textarea data-k="3-3-mine" placeholder="나의 원칙 문장"></textarea>
+
+  <p><b>② 짝</b> 두 문장을 합쳐 하나로 만든다. 무엇을 남기고 무엇을 뺐는지도 적는다.</p>
+  <textarea data-k="3-3-pair" placeholder="짝과 합친 문장"></textarea>
+  <input type="text" data-k="3-3-pair-why" placeholder="남긴 것 / 뺀 것" style="width:100%">
+
+  <p><span class="q-level concept">개념</span> ③ 오개념 카드에 반박한다.</p>
+  <div class="pool"><div class="card">학생 진술: "생성자로 객체를 넣어 주기만 하면 의존 방향이 바뀐 거야. <code>def __init__(self, sender: EmailSender)</code> 처럼 써도 똑같아."</div></div>
+  <textarea data-k="3-3-rebut" placeholder="이 진술의 어디가 틀렸는지, 3-2에서 그린 화살표를 근거로 반박"></textarea>
+
+  <p><span class="q-level concept">개념</span> ④ 이 원칙을 왜 '역전'이라는 말로 부를까? 3-2의 표를 근거로 추측한다.</p>
+  <textarea data-k="3-3-why-invert"></textarea>
+
+  <hr>
+  <p><b>확인 구역</b> 위 ①~④를 모두 쓴 뒤에 펼쳐 읽는다. 내 문장과 대조해 같은 점·다른 점을 적는다.</p>
+
+  <details class="defs">
+    <summary><b>개념 확인 펼치기</b> (일반화 문장을 쓴 뒤 열어 보세요)</summary>
+  <aside class="box concept">
+    <h4>개념 확인: DIP (Dependency Inversion Principle, 의존 역전 원칙)</h4>
+    <ul>
+      <li><b>정의</b>: 고수준 모듈은 저수준 모듈에 의존해서는 안 된다. 둘 다 추상에 의존해야 한다. 추상이 세부 사항에 의존해서는 안 되며, 세부 사항이 추상에 의존해야 한다.</li>
+      <li><b>'역전'의 뜻</b>: 실행할 때 호출 흐름(고수준 → 저수준)은 그대로다. 바뀌는 것은 <b>소스 코드의 의존 방향</b>이다. 저수준 구현이 고수준이 정한 약속을 향해 화살표를 그리게 된다.</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>개념 확인: 고수준 모듈 / 저수준 모듈</h4>
+    <ul>
+      <li><b>고수준</b>: "무엇을 할지"를 정하는 업무 규칙(주문이 완료되면 고객에게 알린다).</li>
+      <li><b>저수준</b>: "어떻게 할지"를 맡는 세부 수단(이메일, 카카오톡, 파일, DB).</li>
+      <li><b>코드와 연결</b>: <code>s3_notifier.py</code> 주석의 "업무 규칙 쪽"이 고수준, "수단 쪽"이 저수준이다.</li>
+      <li><b>추상은 누구 것인가</b>: 추상(약속)은 고수준이 <b>필요로 하는 모양</b>으로 정한다. 그래서 2차시의 "필요한 만큼만 작은 약속"(ISP)이 DIP의 추상이 된다.</li>
+    </ul>
+  </aside>
+  <aside class="box concept">
+    <h4>개념 확인: 의존성 주입 (Dependency Injection, DI)</h4>
+    <ul>
+      <li><b>정의</b>: 객체가 쓸 협력 객체를 스스로 만들지 않고 바깥(조립 지점)에서 넣어 받는 <b>기법</b>. 생성자 주입이 가장 흔하다.</li>
+      <li><b>DIP와의 관계</b>: DI는 DIP를 이루는 수단 중 하나일 뿐이다. 구체 클래스 타입을 주입받으면 주입은 했지만 의존 방향은 그대로다.</li>
+    </ul>
+  </aside>
+  </details>
+
+  <table>
+    <tr><th>내 문장과 같은 점</th><th>내 문장에 없던 것 / 다르게 쓴 것</th></tr>
+    <tr><td><textarea data-k="3-3-same"></textarea></td><td><textarea data-k="3-3-diff"></textarea></td></tr>
+  </table>
+</section>
+
+<h2>3부. 조직: 종합 설계 프로젝트</h2>
+
+<!-- ============================================================= -->
+<section class="activity" data-type="code" id="a3-4">
+  <h3>활동 3-4. 학교 도서관 대출 시스템 다시 설계하기</h3>
+  <div class="tags"><span class="t-type">코드 직접 수정 · 모둠 설계</span><span>14분</span><span>모둠</span><span>목표 3-b</span></div>
+
+  <div class="situation">
+    <b>상황</b> 학교 도서관 프로그램은 <code>LibrarySystem</code> 한 클래스가 대출 규칙, 연체료 계산, 이메일 알림, JSON 파일 저장을 모두 맡고 있다. 회원 유형은 <code>if-elif</code>로 나뉜다. 이번 학기에 요구 변경 카드 3장이 들어왔다. 시작 코드: <code>code/s3_library_project.py</code>
+  </div>
+  <div class="pool">
+    <div class="card"><b>카드 ①</b> 도서관 운영위원회<br>교직원(staff) 회원 신설: 최대 10권, 30일, 연체료 면제</div>
+    <div class="card"><b>카드 ②</b> 학생회<br>이메일 대신 문자(SMS) 알림도 받고 싶다</div>
+    <div class="card"><b>카드 ③</b> 정보부 선생님<br>테스트 때 파일이 안 생기게 메모리 저장소로 바꿔 끼우고 싶다</div>
+  </div>
+
+  <p><b>모둠 역할</b> (1인 1역, 4인 기준)</p>
+  <table>
+    <tr><th>설계 기록(원칙-근거 표)</th><th>다이어그램(화살표)</th><th>드라이버(코딩)</th><th>검증(점검 실행·질문)</th></tr>
+    <tr><td><input type="text" data-k="3-4-r1"></td><td><input type="text" data-k="3-4-r2"></td><td><input type="text" data-k="3-4-r3"></td><td><input type="text" data-k="3-4-r4"></td></tr>
+  </table>
+
+  <p><b>1단계 (4분) 설계 먼저</b> 코드를 고치기 전에 표를 채운다. 원칙은 여러 개를 골라도 되고, "적용 안 함"도 근거가 있으면 좋은 답이다.</p>
+  <table class="sort-table">
+    <tr><th>카드</th><th>누가, 왜 바꾸려 하는가 (변경 이유)</th><th>적용할 원칙</th><th>새로 만들 클래스 / Protocol 이름</th><th>근거</th></tr>
+    <tr><td>①</td>
+      <td><textarea data-k="3-4-t1-reason"></textarea></td>
+      <td>
+        <label class="check"><input type="checkbox" data-k="3-4-t1-srp"> SRP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t1-ocp"> OCP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t1-lsp"> LSP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t1-isp"> ISP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t1-dip"> DIP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t1-none"> 적용 안 함</label>
+      </td>
+      <td><textarea data-k="3-4-t1-names"></textarea></td>
+      <td><textarea data-k="3-4-t1-why"></textarea></td></tr>
+    <tr><td>②</td>
+      <td><textarea data-k="3-4-t2-reason"></textarea></td>
+      <td>
+        <label class="check"><input type="checkbox" data-k="3-4-t2-srp"> SRP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t2-ocp"> OCP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t2-lsp"> LSP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t2-isp"> ISP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t2-dip"> DIP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t2-none"> 적용 안 함</label>
+      </td>
+      <td><textarea data-k="3-4-t2-names"></textarea></td>
+      <td><textarea data-k="3-4-t2-why"></textarea></td></tr>
+    <tr><td>③</td>
+      <td><textarea data-k="3-4-t3-reason"></textarea></td>
+      <td>
+        <label class="check"><input type="checkbox" data-k="3-4-t3-srp"> SRP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t3-ocp"> OCP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t3-lsp"> LSP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t3-isp"> ISP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t3-dip"> DIP</label>
+        <label class="check"><input type="checkbox" data-k="3-4-t3-none"> 적용 안 함</label>
+      </td>
+      <td><textarea data-k="3-4-t3-names"></textarea></td>
+      <td><textarea data-k="3-4-t3-why"></textarea></td></tr>
+  </table>
+
+  <p><b>의존 화살표 다이어그램</b> 지금 구조와 모둠 설계안을 나란히 그린다. 추상(Protocol·ABC)은 이름 앞에 «약속»이라고 표시한다.</p>
+  <table>
+    <tr><th>지금 (LibrarySystem 하나)</th><th>모둠 설계안</th></tr>
+    <tr><td><textarea class="tall" data-k="3-4-diagram-before"></textarea></td><td><textarea class="tall" data-k="3-4-diagram-after"></textarea></td></tr>
+  </table>
+
+  <p><b>2단계 (8분) 구현</b> 카드를 1장 이상 골라 구현하고 <code>python3 s3_library_project.py</code>로 점검한다. 맨 아래 점검 구역과 <code>build_library</code>의 매개변수 이름은 바꾸지 않는다.</p>
+  <table>
+    <tr><th>카드</th><th>구현했나</th><th>점검 결과</th><th>기존 코드에서 고친 줄 수</th><th>새로 추가한 줄 수</th></tr>
+    <tr><td>①</td><td><input type="checkbox" data-k="3-4-i1"></td><td><select data-k="3-4-i1-res"><option value=""></option><option>통과</option><option>미완성</option><option>오류</option></select></td><td><input type="text" data-k="3-4-i1-mod"></td><td><input type="text" data-k="3-4-i1-add"></td></tr>
+    <tr><td>②</td><td><input type="checkbox" data-k="3-4-i2"></td><td><select data-k="3-4-i2-res"><option value=""></option><option>통과</option><option>미완성</option><option>오류</option></select></td><td><input type="text" data-k="3-4-i2-mod"></td><td><input type="text" data-k="3-4-i2-add"></td></tr>
+    <tr><td>③</td><td><input type="checkbox" data-k="3-4-i3"></td><td><select data-k="3-4-i3-res"><option value=""></option><option>통과</option><option>미완성</option><option>오류</option></select></td><td><input type="text" data-k="3-4-i3-mod"></td><td><input type="text" data-k="3-4-i3-add"></td></tr>
+  </table>
+
+  <details class="hint"><summary>힌트 1단계 (방향)</summary>
+    <p>카드마다 "바뀌는 것"이 무엇인지 먼저 이름 붙인다. 회원 규칙, 알림 수단, 저장 장소는 각각 누가 바꾸려 하는가? 바뀌는 것을 약속 뒤로 숨기면 <code>LibrarySystem</code>은 그 약속만 알면 된다.</p>
+  </details>
+  <details class="hint"><summary>힌트 2단계 (구조)</summary>
+    <p>카드 ②③: 3-2에서 <code>OrderService</code>에 한 일을 <code>LibrarySystem</code>의 알림·저장에 똑같이 한다. 구체 클래스를 고르는 일은 <code>build_library</code>(조립 지점)에서만 한다. 카드 ①: 1차시 활동 1-4의 할인 클래스처럼, 회원 유형마다 "한도·기간·연체료"를 알려 주는 객체를 둘 수 있다.</p>
+  </details>
+
+  <p><b>3단계 (2분) 돌아보기</b></p>
+  <p><span class="q-level concept">개념</span> 카드 ①을 <code>elif</code> 한 줄 추가로 통과시킬 수도 있다. 우리 모둠은 어떤 방법을 골랐고, 그 선택은 "회원 유형이 앞으로 또 늘어날까?"라는 질문과 어떻게 관련되는가?</p>
+  <textarea data-k="3-4-elif"></textarea>
+  <p><span class="q-level concept">개념</span> 우리 설계에서 두 원칙이 <b>함께</b> 쓰인 곳을 하나 찾아 "원칙 A가 만든 ○○ 덕분에 원칙 B가 가능했다" 형식으로 쓴다.</p>
+  <textarea data-k="3-4-connect"></textarea>
+</section>
+
+<!-- ============================================================= -->
+<section class="activity" data-type="debate" id="a3-5">
+  <h3>활동 3-5. 논쟁: 추상이 많을수록 좋은 설계인가?</h3>
+  <div class="tags"><span class="t-type">찬반 논쟁</span><span>7분</span><span>모둠</span><span>목표 3-c</span></div>
+
+  <div class="situation">
+    <b>요구</b> (2학년 3반 학급 문고) "누가 어떤 책을 빌려 갔는지 기록하고, 목록을 출력해 주세요. 반장이 쉬는 시간에 쓰는 프로그램이고, 책은 30권 정도입니다."<br>
+    두 모둠이 같은 요구를 다르게 설계했다. 시작 코드: <code>code/s3_yagni_compare.py</code> (읽고 실행만 한다)
+  </div>
+
+  <p><span class="q-level fact">사실</span> ① 실행해서 표를 채운다.</p>
+  <table>
+    <tr><th></th><th>클래스(Protocol 포함) 수</th><th>클래스 코드 줄 수</th><th>책 대출 1건을 기록할 때 거치는 클래스 이름</th></tr>
+    <tr><td>설계안 A</td><td><input type="text" data-k="3-5-a-n"></td><td><input type="text" data-k="3-5-a-lines"></td><td><input type="text" data-k="3-5-a-path"></td></tr>
+    <tr><td>설계안 B</td><td><input type="text" data-k="3-5-b-n"></td><td><input type="text" data-k="3-5-b-lines"></td><td><input type="text" data-k="3-5-b-path"></td></tr>
+  </table>
+  <p>두 출력은 같은가? <select data-k="3-5-same"><option value=""></option><option>같다</option><option>다르다</option></select></p>
+
+  <p><span class="q-level debate">논쟁</span> ② 논제: <b>"설계안 B가 더 좋은 설계다."</b> 모둠을 찬성 2명·반대 2명으로 나눈다. 내 진영의 입장과 상관없이 맡은 역할의 근거를 2개씩 만든다. 근거에는 오늘 배운 단어(변경, 약속, 의존)나 코드 사실을 하나 이상 넣는다.</p>
+  <table>
+    <tr><th>찬성 (B가 더 좋다)</th><th>반대 (B는 과하다)</th></tr>
+    <tr><td><textarea data-k="3-5-pro1" placeholder="근거 1"></textarea><textarea data-k="3-5-pro2" placeholder="근거 2"></textarea></td>
+        <td><textarea data-k="3-5-con1" placeholder="근거 1"></textarea><textarea data-k="3-5-con2" placeholder="근거 2"></textarea></td></tr>
+  </table>
+  <p>상대 진영 근거 중 가장 설득력 있던 것 하나와 그 이유:</p>
+  <textarea data-k="3-5-best-other"></textarea>
+
+  <p><span class="q-level debate">논쟁</span> ③ 모둠 판정: 논쟁을 바탕으로 <b>"이런 조건이면 추상을 만든다"</b> 기준 2개를 쓴다. 기준은 다른 프로그램에도 쓸 수 있게 일반적인 말로 쓴다.</p>
+  <table>
+    <tr><th>기준</th><th>설계안 B의 추상 중 이 기준을 통과하는 것 (없으면 '없음')</th></tr>
+    <tr><td><textarea data-k="3-5-crit1" placeholder="기준 1"></textarea></td><td><textarea data-k="3-5-crit1-b"></textarea></td></tr>
+    <tr><td><textarea data-k="3-5-crit2" placeholder="기준 2"></textarea></td><td><textarea data-k="3-5-crit2-b"></textarea></td></tr>
+  </table>
+
+  <p><span class="q-level debate">논쟁</span> ④ 우리 기준을 활동 3-4의 <b>우리 모둠 설계</b>에 적용한다. 지금 상황에서 과하다고 판단되는 부분 1곳(없다면 가장 과해 보일 수 있는 곳)을 표시하고, 그대로 둘지 없앨지 결정한다.</p>
+  <table>
+    <tr><th>과해 보이는 부분 (클래스/Protocol 이름)</th><th>결정</th><th>근거 (기준 1·2 중 무엇에 비춰)</th></tr>
+    <tr><td><input type="text" data-k="3-5-over-what"></td>
+      <td><select data-k="3-5-over-dec"><option value=""></option><option>그대로 둔다</option><option>없앤다</option><option>나중에 필요해지면 만든다</option></select></td>
+      <td><textarea data-k="3-5-over-why"></textarea></td></tr>
+  </table>
+</section>
+
+<h2>4부. 전이와 성찰</h2>
+
+<!-- ============================================================= -->
+<section class="activity" data-type="transfer" id="a3-6">
+  <h3>활동 3-6. 낯선 코드: 기상 관측소</h3>
+  <div class="tags"><span class="t-type">낯선 도메인 전이</span><span>4분</span><span>개인</span><span>목표 3-a, 3-c</span></div>
+
+  <div class="situation">
+    <b>상황</b> 학교 옥상 기상 관측소 프로그램이 매시간 기온을 기록한다.<br>
+    · 센서는 다음 학기에 <code>ThermoSensorV3</code>로 교체할 예정이다. V3는 <code>read()</code> 대신 <code>measure_celsius()</code> 메서드를 제공한다.<br>
+    · 저장은 CSV 파일. 과학부 선생님이 엑셀로 열어 보며, CSV 외 저장 방식은 계획이 없다.<br>
+    · 센서가 옥상에 있어서 교실에서는 실제 기온을 읽을 수 없다.
+  </div>
+<pre><code>class ThermoSensorV2:  # [A]
+    def read(self) -&gt; float: ...
+
+class CsvWriter:  # [B]
+    def write(self, row: list) -&gt; None: ...
+
+class WeatherStation:
+    HOT = 30.0
+
+    def __init__(self) -&gt; None:
+        self.sensor = ThermoSensorV2()  # [C]
+        self.writer = CsvWriter()  # [D]
+
+    def record(self, hour: int) -&gt; None:
+        temp = self.sensor.read()  # [E]
+        status = "경고" if temp &gt;= self.HOT else "정상"
+        self.writer.write([hour, temp, status])</code></pre>
+  <p>전체 코드: <code>code/s3_transfer_weather.py</code> (코드는 고치지 않는다)</p>
+
+  <p>① 의존 화살표를 그리고, 고수준과 저수준을 구분해 표시한다.</p>
+  <textarea class="tall" data-k="3-6-arrow"></textarea>
+
+  <p>② 두 의존 중 하나씩 골라 판단한다. 위 상황 설명과 [A]~[E] 위치를 근거로 쓴다.</p>
+  <table>
+    <tr><th></th><th>고른 의존</th><th>근거 (상황의 어떤 사실 때문인가)</th></tr>
+    <tr><td>역전할 의존</td>
+      <td><select data-k="3-6-invert"><option value=""></option><option>WeatherStation → ThermoSensorV2</option><option>WeatherStation → CsvWriter</option></select></td>
+      <td><textarea data-k="3-6-invert-why"></textarea></td></tr>
+    <tr><td>지금은 역전하지 않을 의존</td>
+      <td><select data-k="3-6-keep"><option value=""></option><option>WeatherStation → ThermoSensorV2</option><option>WeatherStation → CsvWriter</option></select></td>
+      <td><textarea data-k="3-6-keep-why"></textarea></td></tr>
+  </table>
+
+  <p>③ 역전할 의존에 쓸 약속의 이름과 메서드 모양을 한 줄로 쓴다. 이름은 V2/V3 중 누구 쪽이 아니라 <code>WeatherStation</code>이 필요로 하는 말로 짓는다.</p>
+  <input type="text" data-k="3-6-abstract" style="width:100%" placeholder="약속 이름과 메서드 모양">
+
+  <p>④ "지금은 역전하지 않을" 의존을 나중에 역전해야 하는 상황이 생긴다면 어떤 일이 일어났을 때일까?</p>
+  <textarea data-k="3-6-later"></textarea>
+</section>
+
+<!-- ============================================================= -->
+<section class="activity" data-type="reflect" id="a3-7">
+  <h3>활동 3-7. 퇴장권과 3차시 전체 성찰</h3>
+  <div class="tags"><span class="t-type">퇴장권 · 자기 점검</span><span>5분</span><span>개인</span><span>목표 3-a, 3-b, 3-c</span></div>
+
+  <p><b>퇴장권 1</b> (목표 3-a) 다음 중 DIP를 지킨 코드를 고르고 이유를 한 줄로 쓴다.</p>
+  <label class="check"><input type="radio" name="3-7-q1" data-k="3-7-q1-ga"> (가) <code>self.db = MySQLDB()</code></label>
+  <label class="check"><input type="radio" name="3-7-q1" data-k="3-7-q1-na"> (나) <code>def __init__(self, db: Database)</code> 이고 <code>Database</code>는 Protocol</label>
+  <label class="check"><input type="radio" name="3-7-q1" data-k="3-7-q1-da"> (다) <code>def __init__(self, db: MySQLDB)</code></label>
+  <input type="text" data-k="3-7-q1-why" style="width:100%" placeholder="이유">
+
+  <p><b>퇴장권 2</b> (목표 3-a) "의존성 주입을 썼으니 DIP를 지켰다"가 항상 참이 아닌 경우를 위의 (다) 보기를 이용해 설명한다.</p>
+  <textarea data-k="3-7-q2"></textarea>
+
+  <p><b>퇴장권 3</b> (목표 3-c) "구현이 하나뿐이고, 바뀔 계획도 없으며, 테스트도 쉬운 클래스"에 추상을 만들겠는가?</p>
+  <label class="check"><input type="radio" name="3-7-q3" data-k="3-7-q3-yes"> 만든다</label>
+  <label class="check"><input type="radio" name="3-7-q3" data-k="3-7-q3-no"> 만들지 않는다</label>
+  <input type="text" data-k="3-7-q3-why" style="width:100%" placeholder="근거 1개">
+
+  <p><b>퇴장권 4</b> (목표 3-b) 변경·약속·의존 중 우리 모둠 프로젝트(활동 3-4)에서 가장 중요했던 렌즈 하나와 그 이유.</p>
+  <select data-k="3-7-q4-lens"><option value=""></option><option>변경 (1차시)</option><option>약속 (2차시)</option><option>의존 (3차시)</option></select>
+  <textarea data-k="3-7-q4-why"></textarea>
+
+  <p><b>퇴장권 5</b> (자기 점검) 새 코드에서 의존 화살표를 그리고 역전할 지점을 고를 수 있다.</p>
+  <div class="scale">
+    <label><input type="radio" name="3-7-q5" data-k="3-7-q5-1"> 1 아직 어렵다</label>
+    <label><input type="radio" name="3-7-q5" data-k="3-7-q5-2"> 2 도움이 있으면 할 수 있다</label>
+    <label><input type="radio" name="3-7-q5" data-k="3-7-q5-3"> 3 혼자 할 수 있다</label>
+    <label><input type="radio" name="3-7-q5" data-k="3-7-q5-4"> 4 친구에게 설명할 수 있다</label>
+  </div>
+
+  <h4>3차시 전체 성찰</h4>
+  <p><span class="q-level concept">개념</span> 세 렌즈 <b>변경 · 약속 · 의존</b>을 모두 넣어, 1~3차시에 배운 것을 잇는 한 문장을 쓴다.</p>
+  <textarea data-k="3-7-lens-sentence"></textarea>
+
+  <p><span class="q-level debate">논쟁</span> "원칙을 지키지 않기로 한 판단도 좋은 설계일 수 있다." 오늘 활동에서 찾은 근거로 내 입장을 한 줄로 쓴다.</p>
+  <textarea data-k="3-7-balance"></textarea>
+
+  <p><b>생각의 변화</b> 1차시 학습지의 사전 생각과 활동 3-1의 사전 생각을 다시 읽고 비교한다.</p>
+  <table>
+    <tr><th>그때 내 생각 (옮겨 적기)</th><th>지금 내 생각</th><th>생각을 바꾼(또는 굳힌) 활동</th></tr>
+    <tr><td><textarea data-k="3-7-then"></textarea></td><td><textarea data-k="3-7-now"></textarea></td><td><textarea data-k="3-7-which"></textarea></td></tr>
+  </table>
+</section>
+
+</main>
+<nav class="pager">
+  <a href="session_2.html">← 2차시 학습지</a>
+  <a href="../index.html">목차 →</a>
+</nav>
+<script src="../assets/worksheet.js"></script>
+<script src="../assets/pyrunner.js"></script>
+</body>
+</html>
